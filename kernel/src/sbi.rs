@@ -11,6 +11,10 @@ const EID_REMOTE_FENCE_I: i32 = 5;
 const EID_REMOTE_SFENCE_VMA: i32 = 6;
 const EID_REMOTE_SFENCE_VMA_ASID: i32 = 7;
 const EID_SHUTDOWN: i32 = 8;
+const EID_BASE:i32=0x10;
+
+const FID_GET_SBI_IMPLEMENTATION_ID:i32=1;
+
 
 #[inline(always)]
 fn sbi_call(extension_id: i32 ,function_id: i32, arg0: u32, arg1: u32, arg2: u32) -> (i32,i32) {
@@ -35,4 +39,7 @@ pub fn putchar(c:u32){
 pub fn shutdown()->!{
     sbi_call(EID_SHUTDOWN,0,0,0,0);
     panic!("shutdown fail!");
+}
+pub fn get_sbi_implementation_id()->i32{
+    sbi_call(EID_BASE,FID_GET_SBI_IMPLEMENTATION_ID,0,0,0).1
 }
