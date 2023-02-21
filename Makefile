@@ -1,12 +1,14 @@
 BOOTLOADER := bootloader/opensbi-v1.2.bin
 
-KERNEL_ELF := target/riscv64gc-unknown-none-elf/release/os
-KERNEL_BIN := kernel/target/riscv64gc-unknown-none-elf/release/os.bin
+
+KERNEL_ELF := kernel/target/riscv64gc-unknown-none-elf/release/kernel
+KERNEL_BIN := kernel/target/riscv64gc-unknown-none-elf/release/kernel.bin
 KERNEL_ENTRY := 0x80200000
 
 
 build:
 	cd kernel && cargo build --release
+	rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
 
 qemu:build
 	@qemu-system-riscv64 \
