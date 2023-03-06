@@ -3,6 +3,7 @@
 #![feature(panic_info_message)]
 #![feature(alloc_error_handler)]
 #![feature(core_panic)]
+#![feature(fn_align)]
 
 extern crate alloc;
 
@@ -12,9 +13,11 @@ mod sbi;
 mod stdio;
 mod config;
 mod memory;
+mod interrupt;
 
 use core::arch::global_asm;
-
+use core::arch::asm;
+use riscv;
 
 global_asm!(include_str!("entry.asm"));
 
@@ -24,6 +27,11 @@ pub fn rust_main() -> ! {
     println!("Rift os is booting");
     memory::init();
     memory::test();
+    interrupt::init_interrupt();
+    unsafe{
+        riscv::asm::ebreak();
+    }
+    panic!("should panic in kernel_trap");
     sbi::shutdown();
 }
 

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 buddy_system_allocator = "0.6"
+riscv = "0.10.1"
