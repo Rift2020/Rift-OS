@@ -6,6 +6,8 @@
 #![feature(fn_align)]
 
 extern crate alloc;
+#[macro_use]
+extern crate lazy_static;
 
 mod lang_items;
 mod sbi;
@@ -24,14 +26,10 @@ global_asm!(include_str!("entry.asm"));
 #[no_mangle]
 pub fn rust_main() -> ! {
     clear_bss();
-    println!("Rift os is booting");
+    println!("[Rift os] booting");
+    interrupt::init_interrupt();
     memory::init();
     memory::test();
-    interrupt::init_interrupt();
-    unsafe{
-        riscv::asm::ebreak();
-    }
-    panic!("should panic in kernel_trap");
     sbi::shutdown();
 }
 

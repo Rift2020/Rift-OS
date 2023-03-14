@@ -9,6 +9,7 @@ KERNEL_DEBUG_BIN := kernel/target/riscv64gc-unknown-none-elf/debug/kernel.bin
 
 KERNEL_ENTRY := 0x80200000
 
+MEMORY_SIZE := 16G
 
 build:
 	cd kernel && cargo build
@@ -23,6 +24,7 @@ qemu:release
 		-machine virt \
     	-nographic \
     	-bios $(BOOTLOADER) \
+		-m $(MEMORY_SIZE) \
     	-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY)\
 
 gdb:build
@@ -31,6 +33,7 @@ gdb:build
 			-machine virt \
     		-nographic \
     		-bios $(BOOTLOADER) \
+			-m $(MEMORY_SIZE) \
     		-device loader,file=$(KERNEL_DEBUG_BIN),addr=$(KERNEL_ENTRY)\
     		-s -S" && \
     tmux split-window -h \
