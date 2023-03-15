@@ -9,7 +9,7 @@ KERNEL_DEBUG_BIN := kernel/target/riscv64gc-unknown-none-elf/debug/kernel.bin
 
 KERNEL_ENTRY := 0x80200000
 
-MEMORY_SIZE := 16G
+MEMORY_SIZE := 128M
 
 build:
 	cd kernel && cargo build

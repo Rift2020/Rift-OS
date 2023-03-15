@@ -12,7 +12,7 @@ use core::ptr::NonNull;
 use spin::Mutex;
 use alloc::vec::Vec;
 
-use crate::config::{PAGE_SIZE, PHYS_VIRT_OFFSET};
+use crate::config::{PAGE_SIZE};
 use crate::memory::allocator;
 
 mod frame;
