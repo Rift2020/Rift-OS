@@ -1,3 +1,4 @@
+use core::arch::global_asm;
 use riscv::register::{
     scause,
     sepc,
@@ -6,7 +7,12 @@ use riscv::register::{
     stval,
 };
 
+global_asm!(include_str!("trap.asm"));
+
 pub fn init_interrupt() {
+    extern "C"{
+        fn __alltraps();
+    }
     unsafe {
         sscratch::write(0);
         stvec::write(kernel_trap as usize, stvec::TrapMode::Direct);
@@ -14,7 +20,7 @@ pub fn init_interrupt() {
     println!("[Rift os] init_interrupt!");
 }
 
-#[repr(align(4))]
+#[no_mangle]
 fn kernel_trap() -> ! {
     let cause = scause::read().cause();
     let epc = sepc::read();

@@ -15,7 +15,7 @@ mod sbi;
 mod stdio;
 mod config;
 mod memory;
-mod interrupt;
+mod trap;
 
 use core::arch::global_asm;
 use core::arch::asm;
@@ -27,9 +27,13 @@ global_asm!(include_str!("entry.asm"));
 pub fn rust_main() -> ! {
     clear_bss();
     println!("[Rift os] booting");
-    interrupt::init_interrupt();
+    trap::interrupt::init_interrupt();
     memory::init();
     memory::test();
+    unsafe{
+        riscv::asm::ebreak();
+    }
+    panic!("should panic in kernel_trap");
     sbi::shutdown();
 }
 
