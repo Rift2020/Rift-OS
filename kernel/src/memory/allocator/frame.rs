@@ -1,3 +1,5 @@
+use crate::config::FRAME_PHYS_VIRT_OFFSET;
+use crate::memory::address::*;
 use super::prev_power_of_two;
 use alloc::collections::BTreeSet;
 use core::alloc::Layout;
@@ -83,21 +85,21 @@ impl<const ORDER: usize> FrameAllocator<ORDER> {
 
     /// Allocate a range of frames from the allocator, returning the first frame of the allocated
     /// range.
-    pub fn alloc(&mut self, count: usize) -> Option<usize> {
+    pub fn alloc(&mut self, count: usize) -> Option<PhysPageNum> {
         let size = count.next_power_of_two();
         self.alloc_power_of_two(size)
     }
 
     /// Allocate a range of frames with the given size and alignment from the allocator, returning
     /// the first frame of the allocated range.
-    pub fn alloc_aligned(&mut self, layout: Layout) -> Option<usize> {
+    pub fn alloc_aligned(&mut self, layout: Layout) -> Option<PhysPageNum> {
         let size = max(layout.size().next_power_of_two(), layout.align());
         self.alloc_power_of_two(size)
     }
 
     /// Allocate a range of frames of the given size from the allocator. The size must be a power of
     /// two. The allocated range will have alignment equal to the size.
-    fn alloc_power_of_two(&mut self, size: usize) -> Option<usize> {
+    fn alloc_power_of_two(&mut self, size: usize) -> Option<PhysPageNum> {
         let class = size.trailing_zeros() as usize;
         for i in class..self.free_list.len() {
             // Find the first non-empty size class
@@ -119,7 +121,7 @@ impl<const ORDER: usize> FrameAllocator<ORDER> {
                     let result = *result_ref;
                     self.free_list[class].remove(&result);
                     self.allocated += size;
-                    return Some(result);
+                    return Some(PhysPageNum::from(result-FRAME_PHYS_VIRT_OFFSET));
                 } else {
                     return None;
                 }
@@ -198,5 +200,20 @@ impl<const ORDER: usize> Deref for LockedFrameAllocator<ORDER> {
 
     fn deref(&self) -> &Mutex<FrameAllocator<ORDER>> {
         &self.0
+    }
+}
+
+pub struct FrameTracker {
+    pub ppn: PhysPageNum,
+}
+
+impl FrameTracker {
+    pub fn new(ppn: PhysPageNum) -> Self {
+        // page cleaning
+        let bytes_array = ppn.get_bytes_array();
+        for i in bytes_array {
+            *i = 0;
+        }
+        Self { ppn }
     }
 }

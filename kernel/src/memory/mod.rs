@@ -1,6 +1,7 @@
 mod allocator;
 mod address;
-use crate::config::{KERNEL_HEAP_SIZE, PAGE_SIZE,PHYS_MEM_END,INIT_PHYS_VIRT_OFFSET};
+mod page_table;
+use crate::config::{KERNEL_HEAP_SIZE, PAGE_SIZE,PHYS_MEM_END,PHYS_VIRT_OFFSET,KERNEL_CODE_OFFSET,PHYS_MEM_START};
 #[global_allocator]
 static HEAP_ALLOCATOR:allocator::LockedHeap::<32>  = allocator::LockedHeap::<32>::empty();
 static mut HEAP_SPACE: [u8; KERNEL_HEAP_SIZE] = [0; KERNEL_HEAP_SIZE];
@@ -10,8 +11,8 @@ pub fn init(){
     extern "C" {
         fn ekernel();
     }
-    let frame_start=((ekernel as usize)+PAGE_SIZE-1)/PAGE_SIZE;
-    let frame_end=(PHYS_MEM_END+INIT_PHYS_VIRT_OFFSET)/PAGE_SIZE;
+    let frame_start=((ekernel as usize)-KERNEL_CODE_OFFSET+PHYS_VIRT_OFFSET+PAGE_SIZE-1)/PAGE_SIZE;
+    let frame_end=(PHYS_MEM_END+PHYS_VIRT_OFFSET)/PAGE_SIZE;
     unsafe{
         HEAP_ALLOCATOR
             .lock()

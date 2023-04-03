@@ -15,7 +15,7 @@ pub fn init_interrupt() {
     }
     unsafe {
         sscratch::write(0);
-        stvec::write(kernel_trap as usize, stvec::TrapMode::Direct);
+        stvec::write(__alltraps as usize, stvec::TrapMode::Direct);
     }
     println!("[Rift os] init_interrupt!");
 }

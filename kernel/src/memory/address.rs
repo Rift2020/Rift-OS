@@ -1,3 +1,5 @@
+use core::fmt::Debug;
+use bitflags::*;
 //sv39
 const PA_WIDTH: usize = 56;
 const PAGE_OFFSET_WIDTH: usize = 12;
@@ -46,5 +48,32 @@ impl From<PhysAddr> for PhysPageNum {
 impl From<PhysPageNum> for PhysAddr {
     fn from(v: PhysPageNum) -> Self {
         PhysAddr(v.0<<PAGE_OFFSET_WIDTH)
+    }
+}
+impl PhysPageNum {
+    pub fn get_bytes_array(&self) -> &'static mut [u8] {
+        let pa: PhysAddr = (*self).into();
+        unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut u8, 4096) }
+    }
+}
+
+impl Debug for PhysAddr{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!("PA:{:#x}",self.0))
+    } 
+}
+impl Debug for VirtAddr{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!("VA:{:#x}",self.0))
+    }
+}
+impl Debug for PhysPageNum{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!("PPN:{:#x}",self.0))
+    }
+}
+impl Debug for VirtPageNum{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_fmt(format_args!("VPN:{:#x}",self.0))
     }
 }

@@ -8,6 +8,8 @@
 extern crate alloc;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate bitflags;
 
 mod lang_items;
 mod sbi;
@@ -30,6 +32,7 @@ pub fn rust_main() -> ! {
     trap::interrupt::init_interrupt();
     memory::init();
     memory::test();
+    println!("interrupt test");
     unsafe{
         riscv::asm::ebreak();
     }

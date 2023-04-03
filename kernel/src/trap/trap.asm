@@ -6,6 +6,7 @@
 .macro STORE a1, a2
 	sd \a1, \a2*XLENB(sp)
 .endm
+
 .macro SAVE_ALL
 	# 通过sscratch是否为0，确定是否在内核态
 	csrrw sp, sscratch, sp
@@ -108,7 +109,7 @@ _to_kernel:
 __alltraps:
 	SAVE_ALL
 	mv a0, sp
-	jal rust_trap
+	jal kernel_trap
 
 	.globl __trapret
 __trapret:

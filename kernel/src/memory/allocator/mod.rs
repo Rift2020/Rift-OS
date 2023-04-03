@@ -12,7 +12,7 @@ use core::ptr::NonNull;
 use spin::Mutex;
 use alloc::vec::Vec;
 
-use crate::config::{PAGE_SIZE};
+use crate::config::{PAGE_SIZE, FRAME_PHYS_VIRT_OFFSET};
 use crate::memory::allocator;
 
 mod frame;
@@ -223,7 +223,7 @@ impl<const ORDER: usize> LockedHeap<ORDER> {
         )+PAGE_SIZE-1)/PAGE_SIZE;
         if let Some(page)=FRAME_ALLOCATOR.lock().alloc(count){
             //TODO:self.allocated_page.push(AllocPage { start_frame: page, count: count });
-            let addr=page<<12;
+            let addr=(usize::from(page)+FRAME_PHYS_VIRT_OFFSET)<<12;
             unsafe{
                 self.0.lock().add_to_heap(addr,addr+count*PAGE_SIZE);
             }
