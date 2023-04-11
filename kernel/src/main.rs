@@ -30,13 +30,17 @@ pub fn rust_main() -> ! {
     clear_bss();
     println!("[Rift os] booting");
     trap::interrupt::init_interrupt();
-    memory::init();
+    let pgtable=memory::init();
+    //pgtable.print();
+    pgtable.set_satp_to_root();
     memory::test();
+    /*
     println!("interrupt test");
     unsafe{
         riscv::asm::ebreak();
     }
     panic!("should panic in kernel_trap");
+    */
     sbi::shutdown();
 }
 

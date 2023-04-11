@@ -1,7 +1,9 @@
-use core::fmt::Debug;
+use core::{fmt::Debug, iter::empty, mem::size_of};
+use alloc::vec::{self, Vec};
 
 use bitflags::*;
-use super::address::*;
+use riscv::asm::sfence_vma_all;
+use super::{address::*, frame::{FrameArea, self, FrameFlags}, allocator::FRAME_ALLOCATOR};
 
 bitflags! {
     #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq,Debug)]
@@ -14,7 +16,7 @@ bitflags! {
         const G = 1 << 5;//global
         const A = 1 << 6;//accessed
         const D = 1 << 7;//dirty
-        //RSW 8,9
+        //RSW 8,9 使用RSW位可能要更改u8
     }
 }
 
@@ -25,6 +27,9 @@ bitflags! {
 pub struct PageTableEntry {
     pub bits: usize,
 }
+
+
+
 
 impl PageTableEntry {
     pub fn new(ppn: PhysPageNum, flags: PTEFlags) -> Self {
@@ -70,10 +75,134 @@ impl PageTableEntry {
     pub fn unset_flags(&mut self,flag:PTEFlags){
         self.bits &= flag.bits() as usize;
     }
+    pub unsafe fn get_pte(ppn:PhysPageNum,index:usize)->&'static mut PageTableEntry{
+        (pa_to_usize(PhysAddr::from(ppn)+PhysAddr::from(size_of::<usize>()*index)) as *mut PageTableEntry).as_mut().unwrap()
+    }
 }
 
 impl Debug for PageTableEntry{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_fmt(format_args!("PTE:\n\t{:?}\n\t{:#b}",self.get_ppn(),self.flags().bits()))
+        f.write_fmt(format_args!("PTE: {:?}\tflags: {:#b}",self.get_ppn(),self.flags().bits()))
+    }
+}
+
+pub struct PageTable{
+    pub root_ppn:PhysPageNum,
+    pub frame_set:Vec<FrameArea>,
+}
+
+
+
+impl PageTable {
+    pub fn new()->Self {
+        let frame=FrameArea::new_by_alloc(1,FrameFlags::R|FrameFlags::W).unwrap();
+        let mut pgtable=Self{root_ppn:frame.ppn,frame_set:Vec::new()};
+        pgtable.frame_set.push(frame);
+        pgtable
+    }
+    pub fn new_by_ppn(root_ppn:PhysPageNum)->Self{
+        Self { root_ppn: (root_ppn), frame_set: Vec::new() }
+    }
+
+    //depth必须为[0,2]
+    fn print_pgtable(root_ppn:PhysPageNum,depth:u8){
+        assert!(depth<=2);
+        if depth==0{
+            println!("PageTable: {:?} :",root_ppn);
+        }
+        let ppn=root_ppn;
+        for i in 0..512{
+            unsafe{
+                let pte=PageTableEntry::get_pte(ppn, i);
+                if pte.is_valid()==false{
+                    continue;
+                }
+                for j in  0..depth{
+                    print!("\t");
+                }
+                println!("{:>3} {:?}",i,pte);
+                if pte.is_directory() {
+                    Self::print_pgtable(pte.get_ppn(),depth+1);
+                }
+            }
+        }
+
+    }
+    pub fn alloc_pte(&mut self,pte:&mut PageTableEntry)->bool{
+        let frame=FrameArea::new_by_alloc(1,FrameFlags::R|FrameFlags::W);
+        match frame {
+            Some(f)=>{
+                pte.set_ppn(f.ppn);
+                pte.set_flags(PTEFlags::V);
+                self.frame_set.push(f);
+                true
+            }
+            None=>{
+                false
+            }
+        }
+    }
+    pub fn find_pte(&mut self,vpn:VirtPageNum,alloc:bool)->Option<&mut PageTableEntry>{
+        let vpn=vpn.indexes();
+        let mut ppn=self.root_ppn;
+        for i in  (0..3).rev(){
+            let pte=unsafe {PageTableEntry::get_pte(ppn,vpn[i])};
+            if  i!=0&&pte.is_valid()==false{
+                if alloc==false{
+                    return None;
+                }
+                self.alloc_pte(pte);
+            }
+            if i==0{
+                return Some(pte);
+            }
+            ppn=pte.get_ppn();
+        }
+        panic!("find_pte error");
+        
+    }
+    pub fn map(&mut self,vpn:VirtPageNum,frame:FrameArea)->bool{
+        for i in 0..frame.count{
+            let v=usize::from(vpn)+i;
+            let p=usize::from(frame.ppn)+i;
+            let pte=self.find_pte(VirtPageNum::from(v),true);
+            match pte {
+                Some(pte1)=>{
+                    pte1.set_ppn(PhysPageNum::from(p));
+                    pte1.set_flags(PTEFlags::from(frame.flags()));
+                }
+                None=>{
+                    return false;
+                }
+            }
+        }
+        self.frame_set.push(frame);
+        true
+    }
+
+    pub fn alloc_and_map(&mut self,vpn:VirtPageNum,count:usize,flags:FrameFlags)->bool{
+        let frame=FrameArea::new_by_alloc(count, flags).unwrap();
+        self.map(vpn, frame)
+    }
+
+    pub fn size_to_pgcount(size:usize)->usize{
+        (size+PAGE_SIZE-1)/PAGE_SIZE
+    }
+
+    pub fn print(&self){
+        Self::print_pgtable(self.root_ppn,0);
+    }
+
+    pub fn set_satp_to_root(&self){
+        let satp=((riscv::register::satp::read().bits()>>PPN_WIDTH)<<PPN_WIDTH)|usize::from(self.root_ppn) ;
+        riscv::register::satp::write(satp); 
+        unsafe {sfence_vma_all();}
+    }
+}
+
+impl Debug for PageTable {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.print();
+        f.write_fmt(format_args!("")) 
     }
 }

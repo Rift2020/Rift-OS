@@ -9,6 +9,10 @@ use core::ops::Range;
 
 use core::ops::Deref;
 use spin::Mutex;
+
+
+
+
 lazy_static!{
     pub static ref FRAME_ALLOCATOR:LockedFrameAllocator::<32>=LockedFrameAllocator::<32>::new();
 }
@@ -133,7 +137,7 @@ impl<const ORDER: usize> FrameAllocator<ORDER> {
     /// Deallocate a range of frames [frame, frame+count) from the frame allocator.
     ///
     /// The range should be exactly the same when it was allocated, as in heap allocator
-    pub fn dealloc(&mut self, start_frame: usize, count: usize) {
+    pub fn dealloc(&mut self, start_frame: PhysPageNum, count: usize) {
         let size = count.next_power_of_two();
         self.dealloc_power_of_two(start_frame, size)
     }
@@ -141,14 +145,15 @@ impl<const ORDER: usize> FrameAllocator<ORDER> {
     /// Deallocate a range of frames which was previously allocated by [`alloc_aligned`].
     ///
     /// The layout must be exactly the same as when it was allocated.
-    pub fn dealloc_aligned(&mut self, start_frame: usize, layout: Layout) {
+    pub fn dealloc_aligned(&mut self, start_frame: PhysPageNum, layout: Layout) {
         let size = max(layout.size().next_power_of_two(), layout.align());
         self.dealloc_power_of_two(start_frame, size)
     }
 
     /// Deallocate a range of frames with the given size from the allocator. The size must be a
     /// power of two.
-    fn dealloc_power_of_two(&mut self, start_frame: usize, size: usize) {
+    fn dealloc_power_of_two(&mut self, start_frame: PhysPageNum, size: usize) {
+        let start_frame=usize::from(start_frame);
         let class = size.trailing_zeros() as usize;
 
         // Merge free buddy lists
@@ -200,20 +205,5 @@ impl<const ORDER: usize> Deref for LockedFrameAllocator<ORDER> {
 
     fn deref(&self) -> &Mutex<FrameAllocator<ORDER>> {
         &self.0
-    }
-}
-
-pub struct FrameTracker {
-    pub ppn: PhysPageNum,
-}
-
-impl FrameTracker {
-    pub fn new(ppn: PhysPageNum) -> Self {
-        // page cleaning
-        let bytes_array = ppn.get_bytes_array();
-        for i in bytes_array {
-            *i = 0;
-        }
-        Self { ppn }
     }
 }
