@@ -1,6 +1,6 @@
 use core::{fmt::Debug, iter::empty, mem::size_of};
 use alloc::vec::{self, Vec};
-
+use crate::config::PAGE_SIZE;
 use bitflags::*;
 use riscv::asm::sfence_vma_all;
 use super::{address::*, frame::{FrameArea, self, FrameFlags}, allocator::FRAME_ALLOCATOR};

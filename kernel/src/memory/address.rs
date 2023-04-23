@@ -1,14 +1,13 @@
 use core::{fmt::Debug, ops};
 use bitflags::*;
 
-use crate::config::PHYS_VIRT_OFFSET;
+use crate::config::{PHYS_VIRT_OFFSET, FRAME_PHYS_VIRT_OFFSET,PAGE_SIZE};
 //sv39
 pub const PA_WIDTH: usize = 56;
 pub const VA_WIDTH: usize =39;
 pub const PAGE_OFFSET_WIDTH: usize = 12;
 pub const PPN_WIDTH:usize = PA_WIDTH - PAGE_OFFSET_WIDTH;
 pub const VPN_WIDTH:usize = VA_WIDTH - PAGE_OFFSET_WIDTH;
-pub const PAGE_SIZE: usize = 4096;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysAddr(pub usize);
@@ -91,6 +90,7 @@ impl PhysPageNum {
     pub fn page_count(&self,rhs:PhysPageNum)->usize{
         rhs.0-self.0
     }
+
 }
 
 impl VirtAddr {
@@ -165,4 +165,7 @@ impl Debug for VirtPageNum{
 
 pub fn pa_to_usize(pa:PhysAddr)->usize{
     usize::from(pa)+PHYS_VIRT_OFFSET 
+}
+pub fn usize_to_pa(va:usize)->PhysAddr{
+    PhysAddr::from(va-PHYS_VIRT_OFFSET)
 }

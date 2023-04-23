@@ -4,6 +4,8 @@
 #![feature(alloc_error_handler)]
 #![feature(core_panic)]
 #![feature(fn_align)]
+#![feature(naked_functions)]
+
 
 extern crate alloc;
 #[macro_use]
@@ -18,10 +20,13 @@ mod stdio;
 mod config;
 mod memory;
 mod trap;
+mod proc;
 
 use core::arch::global_asm;
 use core::arch::asm;
 use riscv;
+
+use crate::proc::kthread::*;
 
 global_asm!(include_str!("entry.asm"));
 
@@ -41,6 +46,14 @@ pub fn rust_main() -> ! {
     }
     panic!("should panic in kernel_trap");
     */
+    println!("Are you there? kthread2 !");
+    let mut kthread2:alloc::boxed::Box<KThread>=KThread::new_kthread_same_pgtable();
+    let mut context=Context::empty();
+    unsafe{
+        INIT_KTHREAD.context_addr=&mut context as *mut Context as usize;
+        INIT_KTHREAD.switch_to(&mut kthread2);
+    }
+    println!("kthread1 is back ! now shutdown !");
     sbi::shutdown();
 }
 
