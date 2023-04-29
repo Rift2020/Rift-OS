@@ -7,6 +7,8 @@ use riscv::register::{
     stval,
 };
 
+use crate::arch::cpu_id;
+
 global_asm!(include_str!("trap.asm"));
 
 pub fn init_interrupt() {
@@ -24,9 +26,9 @@ pub fn init_interrupt() {
 fn kernel_trap() -> ! {
     let cause = scause::read().cause();
     let epc = sepc::read();
-    println!("kernel_trap: cause: {:?}, epc: 0x{:#x}",cause , epc);
+    eprintln!("kernel_trap[CPU{}]: cause: {:?}, epc: {:#x}",cpu_id(),cause , epc);
     if scause::read().bits()==15 {
-        println!("StorePageFault in :{:#x}",stval::read());
+        eprintln!("StorePageFault in :{:#x}",stval::read());
     }
     panic!("trap handled!");
 }

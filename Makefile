@@ -11,6 +11,8 @@ KERNEL_ENTRY := 0x80200000
 
 MEMORY_SIZE := 128M
 
+CPU_NUM := 2
+
 build:
 	cd kernel && cargo build
 	rust-objcopy --strip-all $(KERNEL_DEBUG_ELF) -O binary $(KERNEL_DEBUG_BIN)
@@ -25,6 +27,7 @@ qemu:release
     	-nographic \
     	-bios $(BOOTLOADER) \
 		-m $(MEMORY_SIZE) \
+		-smp $(CPU_NUM)\
     	-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY)\
 
 gdb:build
@@ -34,6 +37,7 @@ gdb:build
     		-nographic \
     		-bios $(BOOTLOADER) \
 			-m $(MEMORY_SIZE) \
+			-smp $(CPU_NUM) \
     		-device loader,file=$(KERNEL_DEBUG_BIN),addr=$(KERNEL_ENTRY)\
     		-s -S" && \
     tmux split-window -h \
