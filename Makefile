@@ -1,11 +1,11 @@
 BOOTLOADER := bootloader/opensbi-v1.2.bin
 
 
-KERNEL_ELF := kernel/target/riscv64gc-unknown-none-elf/release/kernel
-KERNEL_DEBUG_ELF :=kernel/target/riscv64gc-unknown-none-elf/debug/kernel
+KERNEL_ELF := kernel/target/riscv64imac-unknown-none-elf/release/kernel
+KERNEL_DEBUG_ELF :=kernel/target/riscv64imac-unknown-none-elf/debug/kernel
 
-KERNEL_BIN := kernel/target/riscv64gc-unknown-none-elf/release/kernel.bin
-KERNEL_DEBUG_BIN := kernel/target/riscv64gc-unknown-none-elf/debug/kernel.bin
+KERNEL_BIN := kernel/target/riscv64imac-unknown-none-elf/release/kernel.bin
+KERNEL_DEBUG_BIN := kernel/target/riscv64imac-unknown-none-elf/debug/kernel.bin
 
 KERNEL_ENTRY := 0x80200000
 
