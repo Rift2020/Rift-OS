@@ -26,16 +26,17 @@ mod arch;
 
 use core::arch::global_asm;
 use core::arch::asm;
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use riscv;
 
 use crate::arch::cpu_id;
 use crate::arch::start_cpu_from_start2;
 use crate::config::CPU_NUM;
-use crate::config::PHYS_KERNEL_START;
-use crate::config::PHYS_VIRT_OFFSET;
 use crate::proc::kthread::*;
-use crate::sbi::hart_start;
+use crate::proc::thread;
+use crate::proc::thread::*;
+use crate::proc::scheduler::*;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 global_asm!(include_str!("entry.asm"));
@@ -62,16 +63,35 @@ pub fn rust_main() -> ! {
             }
             kstack_vec.push(start_cpu_from_start2(i));
         }
-        memory::test(); 
+        memory::test();
+        
+        //我是IDLE
+        let idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        let idle_tid=idle_thread.tid;
+        IDLE_TID.lock()[cpu_id()]=idle_thread.tid;
+        THREAD_POOL.get_mut().insert(idle_thread);
 
-        let mut kthread2:alloc::boxed::Box<KThread>=KThread::new_kthread_same_pgtable();
-        let mut context=Context::empty();
-        println!("switch test");
-        unsafe{
-            INIT_KTHREAD.context_addr=&mut context as *mut Context as usize;
-            INIT_KTHREAD.switch_to(&mut kthread2);
+        let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        let thread2_tid=thread2.tid;
+        GLOBAL_SCHEDULER.lock().push_thread(thread2);
+    
+        let thread3:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        GLOBAL_SCHEDULER.lock().push_thread(thread3);
+
+        println!("switch test!");
+        
+        THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread2_tid);
+        println!("idle thread is back! let's try again");
+
+        THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread2_tid);
+        println!("back again! yeahhhhhhhhh!");
+        loop {
+            println!("hi i'm scheduler(cpuid:{})",cpu_id());
+            let next_tid=GLOBAL_SCHEDULER.lock().pop().unwrap();
+            THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
+            GLOBAL_SCHEDULER.lock().push_tid(next_tid);
         }
-        println!("kthread1 is back !"); 
+
         loop {
         
         }
@@ -83,7 +103,26 @@ pub fn rust_main() -> ! {
         trap::interrupt::init_interrupt();
         let pgtable=memory::map_kernel();
         pgtable.set_satp_to_root();
-        memory::test();
+        memory::test(); 
+        
+        //我是IDLE
+        let idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        let idle_tid=idle_thread.tid;
+        IDLE_TID.lock()[cpu_id()]=idle_thread.tid;
+        THREAD_POOL.get_mut().insert(idle_thread);
+
+        let thread4:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        GLOBAL_SCHEDULER.lock().push_thread(thread4);
+    
+        let thread5:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        GLOBAL_SCHEDULER.lock().push_thread(thread5);
+        
+        loop {
+            println!("hi i'm scheduler(cpuid:{})",cpu_id());
+            let next_tid=GLOBAL_SCHEDULER.lock().pop().unwrap();
+            THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
+            GLOBAL_SCHEDULER.lock().push_tid(next_tid);
+        }
         loop {
             
         }

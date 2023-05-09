@@ -16,3 +16,6 @@ pub const KERNEL_CODE_OFFSET:usize = KERNEL_CODE_START_ADDR - PHYS_MEM_START;
 pub const KSTACK_PAGE_COUNT:usize =2 ;
 
 pub const CPU_NUM:usize=2;
+
+pub const MAX_TICK:usize=5;
+pub const MAX_THREAD_NUM:usize=1000;
