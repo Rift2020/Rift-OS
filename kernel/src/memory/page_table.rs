@@ -76,7 +76,7 @@ impl PageTableEntry {
         self.bits &= flag.bits() as usize;
     }
     pub unsafe fn get_pte(ppn:PhysPageNum,index:usize)->&'static mut PageTableEntry{
-        (pa_to_usize(PhysAddr::from(ppn)+PhysAddr::from(size_of::<usize>()*index)) as *mut PageTableEntry).as_mut().unwrap()
+        (pa_to_va_usize(PhysAddr::from(ppn)+PhysAddr::from(size_of::<usize>()*index)) as *mut PageTableEntry).as_mut().unwrap()
     }
 }
 
@@ -94,6 +94,9 @@ pub struct PageTable{
 
 
 impl PageTable {
+    pub const fn empty()->Self{
+        PageTable { root_ppn: PhysPageNum(0), frame_set: Vec::new() }
+    }
     pub fn new()->Self {
         let frame=FrameArea::new_by_alloc(1,FrameFlags::R|FrameFlags::W).unwrap();
         let mut pgtable=Self{root_ppn:frame.ppn,frame_set:Vec::new()};
@@ -141,6 +144,14 @@ impl PageTable {
                 false
             }
         }
+    }
+
+    pub fn find_va_pa(&mut self,va:VirtAddr)->PhysAddr{
+        let pte=self.find_pte(va.vpn(),false).unwrap();
+        let ppn=pte.get_ppn();
+        let offset=va.offset();
+        let pa=PhysAddr::from(ppn);
+        PhysAddr(usize::from(pa)+offset)
     }
     pub fn find_pte(&mut self,vpn:VirtPageNum,alloc:bool)->Option<&mut PageTableEntry>{
         let vpn=vpn.indexes();

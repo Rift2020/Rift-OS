@@ -1,7 +1,7 @@
 use core::{cell::UnsafeCell, iter::empty};
 
 use super::kthread::*;
-use crate::{config::*, lang_items::TrustCell};
+use crate::{config::*, lang_items::TrustCell, memory::page_table::PageTable};
 use alloc::{boxed::Box, vec::Vec};
 use spin::*;
 
@@ -22,6 +22,7 @@ pub enum Status {
 
 pub struct Thread{
     pub tid:Tid,
+    pub pgtable:PageTable,
     pub kthread:Box<KThread>,
 }
 
@@ -36,11 +37,12 @@ pub struct ThreadPool{
 
 impl Thread {
     pub fn empty()->Thread{
-        Thread { tid: MAX_THREAD_NUM, kthread: Box::new(KThread::empty())  }
+        Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,kthread: Box::new(KThread::empty())  }
     }
     pub fn new_thread_same_pgtable()->Thread{
         Thread{
             tid:THREAD_POOL.get_mut().alloc_tid(),
+            pgtable:PageTable::empty(),//TODO!!!!!!!
             kthread:KThread::new_kthread_same_pgtable(),
         }
     }

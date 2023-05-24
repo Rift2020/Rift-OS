@@ -2,7 +2,7 @@ pub mod allocator;
 pub mod address;
 pub mod page_table;
 pub mod frame;
-use crate::config::{INIT_KERNEL_HEAP_SIZE, PAGE_SIZE,PHYS_MEM_END,PHYS_VIRT_OFFSET,KERNEL_CODE_OFFSET,PHYS_MEM_START, PHYS_ACCESS_START, PHYS_MEM_SIZE};
+use crate::config::{INIT_KERNEL_HEAP_SIZE, PAGE_SIZE,PHYS_MEM_END,PHYS_VIRT_OFFSET,KERNEL_CODE_OFFSET,PHYS_MEM_START, PHYS_ACCESS_START, PHYS_MEM_SIZE, PHYS_SPACE_SIZE, KERNEL_CODE_START_ADDR};
 #[global_allocator]
 static HEAP_ALLOCATOR:allocator::LockedHeap::<32>  = allocator::LockedHeap::<32>::empty();
 static mut HEAP_SPACE: [u8; INIT_KERNEL_HEAP_SIZE] = [0; INIT_KERNEL_HEAP_SIZE];
@@ -53,7 +53,7 @@ pub fn map_kernel()->PageTable{
     let data_frame=FrameArea::new_without_clear(sdata_ppn,sdata_ppn.page_count(edata_ppn),FrameFlags::R|FrameFlags::W);
     let bss_frame=FrameArea::new_without_clear(sbss_ppn,sbss_ppn.page_count(ebss_ppn),FrameFlags::R|FrameFlags::W);
 
-    let phys_mem_access_frame=FrameArea::new_without_clear(PhysPageNum::from(PHYS_MEM_START>>12),(PHYS_MEM_SIZE+PAGE_SIZE-1)/PAGE_SIZE,FrameFlags::R|FrameFlags::W);
+    let phys_mem_access_frame=FrameArea::new_without_clear(PhysPageNum::from(0),(PHYS_SPACE_SIZE+PAGE_SIZE-1)/PAGE_SIZE,FrameFlags::R|FrameFlags::W);
 
     let mut pgtable=PageTable::new();
     pgtable.map(stext_vpn,text_frame);
@@ -89,6 +89,7 @@ pub fn test(){
         fn sbss();
         fn ebss();
     }
+    println!("heap test start");
     //检查初始堆空间能否分配
     let bss_range = sbss as usize..ebss as usize;
     let a = Box::new(5);

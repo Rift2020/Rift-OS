@@ -1,4 +1,4 @@
-use core::{fmt::Debug, ops};
+use core::{fmt::Debug, ops, debug_assert};
 use bitflags::*;
 
 use crate::config::{PHYS_VIRT_OFFSET, FRAME_PHYS_VIRT_OFFSET,PAGE_SIZE};
@@ -22,7 +22,10 @@ pub struct PhysPageNum(pub usize);
 pub struct VirtPageNum(pub usize);
 
 impl From<usize> for PhysAddr {
-    fn from(v:usize)->Self{PhysAddr(v&(1<<PA_WIDTH)-1)}
+    fn from(v:usize)->Self{
+        debug_assert!(v&(1<<PA_WIDTH)-1==v);
+        PhysAddr(v&(1<<PA_WIDTH)-1)
+    }
 }
 
 impl From<usize> for VirtAddr{
@@ -84,7 +87,7 @@ impl From<PhysPageNum> for PhysAddr {
 impl PhysPageNum {
     pub fn get_bytes_array(&self) -> &'static mut [u8] {
         let pa: PhysAddr = (*self).into();
-        let va=pa_to_usize(pa);
+        let va=pa_to_va_usize(pa);
         unsafe { core::slice::from_raw_parts_mut(va as *mut u8, 4096) }
     }
     pub fn page_count(&self,rhs:PhysPageNum)->usize{
@@ -163,9 +166,15 @@ impl Debug for VirtPageNum{
 }
 
 
-pub fn pa_to_usize(pa:PhysAddr)->usize{
+pub fn pa_to_va_usize(pa:PhysAddr)->usize{
     usize::from(pa)+PHYS_VIRT_OFFSET 
 }
-pub fn usize_to_pa(va:usize)->PhysAddr{
+pub fn pa_usize_to_va_usize(pa:usize)->usize{
+    pa+PHYS_VIRT_OFFSET
+}
+pub fn va_usize_to_pa_usize(va:usize)->usize{
+    va-PHYS_VIRT_OFFSET
+}
+pub fn va_usize_to_pa(va:usize)->PhysAddr{
     PhysAddr::from(va-PHYS_VIRT_OFFSET)
 }

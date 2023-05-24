@@ -62,13 +62,15 @@ bootstacktop:
 boot_page_table_sv39:
     # 0x8000_0000 -> 0x8000_0000 (1G) 防止上面汇编，刷完TLB后无法继续执行剩下四条(内核初始化后不再保留)
 	# 下面两个在内核初始化时会精细化的重新映射
-	# 0xffff_ffc8_0000_0000 -> 0x8000_0000 (1G) 线性偏移映射方便内核访问整个物理内存
+	# 0xffff_ffc8_0000_0000 -> 0x0 (3G) 线性偏移映射方便内核访问整个物理空间
 	# 0xffff_ffff_c000_0000 -> 0x8000_0000 (1G) 内核虚拟空间映射到物理空间
     .zero 8 * 2
 	.quad (0x80000 << 10) | 0xcf # VRWXAD
 	.zero 8 * 253
 	.zero 8 * 32
-	.quad (0x80000 << 10) | 0xcf # VRWXAD
-	.zero 8 * 31
+	.quad (0x0 << 10) | 0xcf # VRWXAD
+	.quad (0x40000 << 10) |0xcf 
+	.quad (0x80000 <<10) |0xcf
+	.zero 8 * 29
 	.zero 8 * 191
 	.quad (0x80000 << 10) | 0xcf # VRWXAD

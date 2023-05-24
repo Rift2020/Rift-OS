@@ -1,3 +1,4 @@
+# 请从最下方的__alltraps开始阅读该汇编代码
 .equ XLENB, 8
 .macro LOAD a1, a2
 	ld \a1, \a2*XLENB(sp)
@@ -8,11 +9,11 @@
 .endm
 
 .macro SAVE_ALL
-	# 通过sscratch是否为0，确定是否在内核态
-	csrrw sp, sscratch, sp
-	bnez sp, trap_from_user
+	# 若是用户台则sscratch存放内核sp的值，若是内核态则sscratch=0
+	csrrw sp, sscratch, sp # swap(sp,sscratch) (原子操作)
+	bnez sp, trap_from_user # if sp!=0 跳转到trap_from_user
 trap_from_kernel:
-	csrr sp, sscratch
+	csrr sp, sscratch # sp=sscratch
 trap_from_user:
 	addi sp, sp, -36*XLENB
 	STORE x1, 1
@@ -46,7 +47,7 @@ trap_from_user:
     STORE x30, 30
     STORE x31, 31
 
-	csrrw s0, sscratch, x0
+	csrrw s0, sscratch, x0 # s0=sscratch,sscratch=0 (原子) 
 	csrr s1, sstatus
 	csrr s2, sepc
 	csrr s3, stval
@@ -108,7 +109,7 @@ _to_kernel:
 	.globl __alltraps
 __alltraps:
 	SAVE_ALL
-	mv a0, sp
+	mv a0, sp # a0=sp 
 	jal kernel_trap
 
 	.globl __trapret

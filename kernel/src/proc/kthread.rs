@@ -5,14 +5,15 @@ use super::scheduler::CURRENT_TID;
 use super::scheduler::IDLE_TID;
 use crate::arch::cpu_id;
 use crate::config::*;
+use crate::driver::block_device::block_device_test;
 use crate::memory::address::*;
 use crate::memory::allocator::FRAME_ALLOCATOR;
 use core::arch::asm;
 use riscv;
 
 
-pub static mut INIT_KTHREAD:KThread=KThread::empty();
-pub static mut CURRENT_KTHREAD:[Option<*mut KThread>;CPU_NUM]=[None;2];
+//pub static mut INIT_KTHREAD:Thread=Thread::empty();
+//pub static mut CURRENT_THREAD:[Option<*mut Thread>;CPU_NUM]=[None;2];
 
 #[repr(C)]
 #[derive(Debug)]
@@ -38,7 +39,7 @@ impl KStack {
         KStack { va: 0 }
     }
     pub fn new()->Self{
-        KStack { va: pa_to_usize(PhysAddr::from(FRAME_ALLOCATOR.lock().alloc(KSTACK_PAGE_COUNT).unwrap()))  }
+        KStack { va: pa_to_va_usize(PhysAddr::from(FRAME_ALLOCATOR.lock().alloc(KSTACK_PAGE_COUNT).unwrap()))  }
     }
     pub fn top_addr(&self)->usize{
         self.va+PAGE_SIZE*KSTACK_PAGE_COUNT
@@ -47,7 +48,7 @@ impl KStack {
 impl Drop for KStack{
     fn drop(&mut self) {
         if self.va!=0{
-            FRAME_ALLOCATOR.lock().dealloc(PhysPageNum::from(usize_to_pa(self.va)),KSTACK_PAGE_COUNT);
+            FRAME_ALLOCATOR.lock().dealloc(PhysPageNum::from(va_usize_to_pa(self.va)),KSTACK_PAGE_COUNT);
         }
     }
 }

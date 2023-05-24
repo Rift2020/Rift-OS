@@ -13,6 +13,8 @@ MEMORY_SIZE := 128M
 
 CPU_NUM := 2
 
+DRIVE_FILE := sdcard.img
+
 build:
 	cd kernel && cargo build
 	rust-objcopy --strip-all $(KERNEL_DEBUG_ELF) -O binary $(KERNEL_DEBUG_BIN)
@@ -29,7 +31,8 @@ qemu:release
 		-m $(MEMORY_SIZE) \
 		-smp $(CPU_NUM)\
     	-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY)\
-
+		-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
+		-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 gdb:build
 	@tmux new-session -d \
 		"qemu-system-riscv64 \
@@ -39,6 +42,8 @@ gdb:build
 			-m $(MEMORY_SIZE) \
 			-smp $(CPU_NUM) \
     		-device loader,file=$(KERNEL_DEBUG_BIN),addr=$(KERNEL_ENTRY)\
+			-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
+			-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0\
     		-s -S" && \
     tmux split-window -h \
 		"riscv64-unknown-elf-gdb \

@@ -153,7 +153,7 @@ impl<const ORDER: usize> FrameAllocator<ORDER> {
     /// Deallocate a range of frames with the given size from the allocator. The size must be a
     /// power of two.
     fn dealloc_power_of_two(&mut self, start_frame: PhysPageNum, size: usize) {
-        let start_frame=usize::from(start_frame);
+        let start_frame=usize::from(start_frame)+FRAME_PHYS_VIRT_OFFSET;
         let class = size.trailing_zeros() as usize;
 
         // Merge free buddy lists

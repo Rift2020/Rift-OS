@@ -21,8 +21,12 @@ mod config;
 mod memory;
 mod trap;
 mod proc;
+mod driver;
+#[path ="board/qemu.rs"]
+mod board;
 #[path = "arch/riscv/mod.rs"]
 mod arch;
+
 
 use core::arch::global_asm;
 use core::arch::asm;
@@ -38,6 +42,7 @@ use crate::proc::thread;
 use crate::proc::thread::*;
 use crate::proc::scheduler::*;
 use core::sync::atomic::{AtomicBool, Ordering};
+
 
 global_asm!(include_str!("entry.asm"));
 
@@ -55,7 +60,7 @@ pub fn rust_main() -> ! {
         
         let pgtable=memory::init();
         pgtable.set_satp_to_root();
-        
+        println!("start other hart");
         let mut kstack_vec:Vec<KStack>=Vec::new();
         for i in 0..CPU_NUM{
             if i==cpu_id(){
@@ -66,11 +71,15 @@ pub fn rust_main() -> ! {
         memory::test();
         
         //我是IDLE
-        let idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        idle_thread.pgtable=pgtable;
         let idle_tid=idle_thread.tid;
         IDLE_TID.lock()[cpu_id()]=idle_thread.tid;
+        CURRENT_TID.lock()[cpu_id()]=idle_thread.tid;
         THREAD_POOL.get_mut().insert(idle_thread);
 
+
+        driver::block_device::block_device_test();
         let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         let thread2_tid=thread2.tid;
         GLOBAL_SCHEDULER.lock().push_thread(thread2);
@@ -85,11 +94,12 @@ pub fn rust_main() -> ! {
 
         THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread2_tid);
         println!("back again! yeahhhhhhhhh!");
-        loop {
+        for i in 0..5 {
             println!("hi i'm scheduler(cpuid:{})",cpu_id());
             let next_tid=GLOBAL_SCHEDULER.lock().pop().unwrap();
             THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
             GLOBAL_SCHEDULER.lock().push_tid(next_tid);
+            break;
         }
 
         loop {
@@ -106,23 +116,28 @@ pub fn rust_main() -> ! {
         memory::test(); 
         
         //我是IDLE
-        let idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
+        idle_thread.pgtable=pgtable;
         let idle_tid=idle_thread.tid;
         IDLE_TID.lock()[cpu_id()]=idle_thread.tid;
+        CURRENT_TID.lock()[cpu_id()]=idle_thread.tid;
         THREAD_POOL.get_mut().insert(idle_thread);
 
+        driver::block_device::block_device_test();
+        
         let thread4:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         GLOBAL_SCHEDULER.lock().push_thread(thread4);
     
         let thread5:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         GLOBAL_SCHEDULER.lock().push_thread(thread5);
         
-        loop {
+        for i in 0..5 {
             println!("hi i'm scheduler(cpuid:{})",cpu_id());
             let next_tid=GLOBAL_SCHEDULER.lock().pop().unwrap();
             THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
             GLOBAL_SCHEDULER.lock().push_tid(next_tid);
         }
+        println!("all test passed");
         loop {
             
         }

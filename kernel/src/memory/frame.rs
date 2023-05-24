@@ -24,6 +24,15 @@ pub struct FrameArea{
 }
 
 impl FrameArea {
+    pub fn clear_pages(ppn: PhysPageNum,count:usize){
+        for i in usize::from(ppn)..usize::from(ppn)+count{
+            let ppn=PhysPageNum::from(i);
+            let bytes_array = ppn.get_bytes_array();
+            for i in bytes_array {
+                *i = 0;
+            }
+        }
+    }
     pub fn clear(&mut self){
         for i in usize::from(self.ppn)..usize::from(self.ppn)+self.count{
             let ppn=PhysPageNum::from(i);
