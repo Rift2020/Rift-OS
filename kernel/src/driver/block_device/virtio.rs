@@ -15,7 +15,7 @@ use super::BlockDevice;
 
 const VIRTIO0: usize = 0x10001000;
 
-pub struct VirtioBlock(Mutex<VirtIOBlk<'static, VirtioHal>>);
+pub struct VirtioBlock(pub Mutex<VirtIOBlk<'static, VirtioHal>>);
 
 impl BlockDevice for VirtioBlock {
     fn read_block(&self, block_id: usize, buf: &mut [u8]) {

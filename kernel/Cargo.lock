@@ -27,6 +27,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6776fc96284a0bb647b615056fc496d1fe1644a7ab01829818a6d91cae888b84"
 
 [[package]]
+name = "block_device"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34debcf14cf4dc2fe9031aa5cbb3b6e05d930a26dcbd657b102270b11456bed6"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -49,10 +55,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fat32"
+version = "0.2.1"
+dependencies = [
+ "block_device",
+]
+
+[[package]]
 name = "kernel"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.3.1",
+ "block_device",
+ "fat32",
  "lazy_static",
  "riscv",
  "spin 0.9.8",

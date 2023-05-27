@@ -12,3 +12,6 @@ lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 bitflags = "2.3.1"
 # virtio-drivers = { path ="../virtio-drivers"}
 virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers", rev = "4ee80e5" }
+
+block_device = "0.1"
+fat32 = {path="../fat32"}

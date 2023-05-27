@@ -22,6 +22,7 @@ mod memory;
 mod trap;
 mod proc;
 mod driver;
+mod fs;
 #[path ="board/qemu.rs"]
 mod board;
 #[path = "arch/riscv/mod.rs"]
@@ -37,6 +38,7 @@ use riscv;
 use crate::arch::cpu_id;
 use crate::arch::start_cpu_from_start2;
 use crate::config::CPU_NUM;
+use crate::fs::FILE_SYSTEM;
 use crate::proc::kthread::*;
 use crate::proc::thread;
 use crate::proc::thread::*;
@@ -78,7 +80,10 @@ pub fn rust_main() -> ! {
         CURRENT_TID.lock()[cpu_id()]=idle_thread.tid;
         THREAD_POOL.get_mut().insert(idle_thread);
 
-        driver::block_device::block_device_test();
+        //driver::block_device::block_device_test();
+        println!("{:?}",FILE_SYSTEM.root_dir());
+        println!("{:?}",FILE_SYSTEM.root_dir().open_file("brk"));
+        
         
         let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         let thread2_tid=thread2.tid;
@@ -115,7 +120,7 @@ pub fn rust_main() -> ! {
         CURRENT_TID.lock()[cpu_id()]=idle_thread.tid;
         THREAD_POOL.get_mut().insert(idle_thread);
 
-        driver::block_device::block_device_test();
+        //driver::block_device::block_device_test();
         
         let thread4:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         GLOBAL_SCHEDULER.lock().push_thread(thread4);
