@@ -9,6 +9,7 @@ use crate::driver::block_device::block_device_test;
 use crate::memory::address::*;
 use crate::memory::allocator::FRAME_ALLOCATOR;
 use core::arch::asm;
+use core::mem::forget;
 use riscv;
 
 
@@ -102,16 +103,18 @@ impl KThread {
     pub fn switch_to(&mut self,target_tid:Tid){
         CURRENT_TID.lock()[cpu_id()]=target_tid;
         unsafe{
-            let idle_thread=&mut (THREAD_POOL.get_mut().pool[target_tid].lock());
-            switch(&mut self.context_addr,&mut (idle_thread.as_mut().unwrap().thread.kthread.context_addr));
-
+            let target_thread=&mut (THREAD_POOL.get_mut().pool[target_tid].lock());
+            switch(&mut self.context_addr,&mut (target_thread.as_mut().unwrap().thread.kthread.context_addr));
+            //线程可能会被另外一个idle_thread运行，这样的话，就应该析构另外一个idle，而不是切换过去的那个
+            //如：thread2先切换到idle_thread1,结果下一次是idle_thread2切换到thread2,没有下三行就会错误的解锁idle_thread1，并且错误的不解锁idle_thread2
+            forget(target_thread);
+            let idle_tid=IDLE_TID.lock()[cpu_id()];
+            THREAD_POOL.get_mut().pool[idle_tid].force_unlock();
         }
 
     }
     pub fn switch_to_idle(&mut self){
-        let idle_tid={IDLE_TID.lock()[cpu_id()]};
-        unsafe{ IDLE_TID.force_unlock();
-        };
+        let idle_tid=IDLE_TID.lock()[cpu_id()];
         self.switch_to(idle_tid);
     }
     pub const fn empty()->KThread{

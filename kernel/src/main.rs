@@ -78,8 +78,8 @@ pub fn rust_main() -> ! {
         CURRENT_TID.lock()[cpu_id()]=idle_thread.tid;
         THREAD_POOL.get_mut().insert(idle_thread);
 
-
         driver::block_device::block_device_test();
+        
         let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         let thread2_tid=thread2.tid;
         GLOBAL_SCHEDULER.lock().push_thread(thread2);
@@ -87,19 +87,11 @@ pub fn rust_main() -> ! {
         let thread3:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         GLOBAL_SCHEDULER.lock().push_thread(thread3);
 
-        println!("switch test!");
-        
-        THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread2_tid);
-        println!("idle thread is back! let's try again");
-
-        THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread2_tid);
-        println!("back again! yeahhhhhhhhh!");
         for i in 0..5 {
             println!("hi i'm scheduler(cpuid:{})",cpu_id());
             let next_tid=GLOBAL_SCHEDULER.lock().pop().unwrap();
             THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
             GLOBAL_SCHEDULER.lock().push_tid(next_tid);
-            break;
         }
 
         loop {
