@@ -24,7 +24,6 @@ impl BlockDeviceForFS {
 impl BlockDevice for BlockDeviceForFS  {
     type Error=isize;
    fn read(&self, buf: &mut [u8], address: usize, number_of_blocks: usize) -> Result<(), Self::Error> {
-       println!("address:{}",address);
         for i in address/512..address/512+number_of_blocks{
             unsafe{
                 self.0.as_mut().unwrap().0.lock()

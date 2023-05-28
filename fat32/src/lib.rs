@@ -1,4 +1,6 @@
 #![no_std]
+
+extern crate alloc;
 pub mod bpb;
 pub mod volume;
 pub mod tool;

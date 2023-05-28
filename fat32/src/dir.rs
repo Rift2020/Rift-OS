@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use block_device::BlockDevice;
 use crate::bpb::BIOSParameterBlock;
 use crate::entry::Entry;
@@ -123,7 +124,10 @@ impl<'a, T> Dir<'a, T>
             NameType::LFN => self.find_lfn(iter, value),
         }
     }
-
+    pub fn ls(&self)->Vec<Entry>{
+        let iter = DirIter::new(self.device, self.fat, self.bpb);
+        iter.filter(|x|x.valid_lfn()).collect()
+    }
     /// Find Long File Name Item, Return Option Type
     fn find_lfn(&self, iter: &mut DirIter<T>, value: &str) -> Option<Entry> {
         let count = get_count_of_lfn(value);

@@ -1,4 +1,6 @@
-use core::str;
+use core::{str, option};
+use alloc::string::String;
+
 use crate::tool::read_le_u32;
 use crate::dir::OpType;
 
@@ -354,7 +356,7 @@ impl Entry {
         }
     }
 
-    pub(crate) fn bytes(&self) -> [u8; 32] {
+    pub fn bytes(&self) -> [u8; 32] {
         if self.sfn.is_some() {
             self.sfn.as_ref().unwrap().bytes(self.item_type)
         } else {
@@ -428,6 +430,21 @@ impl Entry {
         } else {
             false
         }
+    }
+    
+    pub(crate) fn valid_lfn(&self)->bool{
+        if self.is_deleted()==false && self.get_lfn().is_some(){
+            return true;
+        }
+        return false
+    }
+
+    pub fn get_lfn_name(&self)->Option<String>{
+        if self.is_deleted() { return None; }
+        let option = self.get_lfn();
+        if option.is_none() { return None; }
+        let (bytes,len)=option.unwrap();
+        Some(String::from_utf8(bytes.to_vec()).unwrap())
     }
 
     pub(crate) fn lfn_equal(&self, value: &str) -> bool {

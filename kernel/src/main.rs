@@ -81,9 +81,11 @@ pub fn rust_main() -> ! {
         THREAD_POOL.get_mut().insert(idle_thread);
 
         //driver::block_device::block_device_test();
-        println!("{:?}",FILE_SYSTEM.root_dir());
-        println!("{:?}",FILE_SYSTEM.root_dir().open_file("brk"));
-        
+        let v=FILE_SYSTEM.root_dir().ls();
+        for i in v{
+            println!("{}",i.get_lfn_name().unwrap());
+        }
+
         
         let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         let thread2_tid=thread2.tid;
