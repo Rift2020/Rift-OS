@@ -207,7 +207,7 @@ impl PageTable {
     }
 
     pub fn set_satp_to_root(&self){
-        let satp=((riscv::register::satp::read().bits()>>PPN_WIDTH)<<PPN_WIDTH)|usize::from(self.root_ppn) ;
+        let satp=self.root_ppn.satp();
         riscv::register::satp::write(satp); 
         unsafe {sfence_vma_all();}
     }

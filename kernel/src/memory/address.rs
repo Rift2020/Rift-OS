@@ -101,6 +101,9 @@ impl PhysPageNum {
     pub fn page_count(&self,rhs:PhysPageNum)->usize{
         rhs.0-self.0
     }
+    pub fn satp(&self)->usize{
+        ((riscv::register::satp::read().bits()>>PPN_WIDTH)<<PPN_WIDTH)|self.0
+    }
 
 }
 

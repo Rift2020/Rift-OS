@@ -1,7 +1,7 @@
 use core::{cell::UnsafeCell, iter::empty};
 
 use super::kthread::*;
-use crate::{config::*, lang_items::TrustCell, memory::page_table::PageTable};
+use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}};
 use alloc::{boxed::Box, vec::Vec};
 use spin::*;
 
@@ -40,10 +40,12 @@ impl Thread {
         Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,kthread: Box::new(KThread::empty())  }
     }
     pub fn new_thread_same_pgtable()->Thread{
+        let pgtable=map_kernel();
+        let root_ppn=pgtable.root_ppn;
         Thread{
             tid:THREAD_POOL.get_mut().alloc_tid(),
-            pgtable:PageTable::empty(),//TODO!!!!!!!
-            kthread:KThread::new_kthread_same_pgtable(),
+            pgtable,
+            kthread:KThread::new_kthread(root_ppn),
         }
     }
 }

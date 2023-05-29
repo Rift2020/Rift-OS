@@ -120,9 +120,9 @@ impl KThread {
     pub const fn empty()->KThread{
         KThread { context_addr: 0, kstack: (KStack::empty()) }
     }
-    pub fn new_kthread_same_pgtable()->Box<KThread>{
+    pub fn new_kthread(root_ppn:PhysPageNum)->Box<KThread>{
         let kstack=KStack::new();
-        let context=Context::new_context(riscv::register::satp::read().bits());
+        let context=Context::new_context(root_ppn.satp());
         let context_addr=unsafe{
             context.push_at(kstack.top_addr())
         };
