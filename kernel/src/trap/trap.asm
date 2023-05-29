@@ -9,7 +9,7 @@
 .endm
 
 .macro SAVE_ALL
-	# 若是用户台则sscratch存放内核sp的值，若是内核态则sscratch=0
+	# 若是用户态则sscratch存放内核sp的值，若是内核态则sscratch=0
 	csrrw sp, sscratch, sp # swap(sp,sscratch) (原子操作)
 	bnez sp, trap_from_user # if sp!=0 跳转到trap_from_user
 trap_from_kernel:

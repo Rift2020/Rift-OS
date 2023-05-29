@@ -48,12 +48,12 @@ pub fn map_kernel()->PageTable{
     let sbss_ppn=kernel_code_usize_to_ppn(sbss_with_stack as usize);
     let ebss_ppn=kernel_code_usize_to_ppn(ebss as usize);
     
-    let text_frame=FrameArea::new_without_clear(stext_ppn,stext_ppn.page_count(etext_ppn),FrameFlags::R|FrameFlags::X);
-    let rodata_frame=FrameArea::new_without_clear(srodata_ppn,srodata_ppn.page_count(erodata_ppn),FrameFlags::R);
-    let data_frame=FrameArea::new_without_clear(sdata_ppn,sdata_ppn.page_count(edata_ppn),FrameFlags::R|FrameFlags::W);
-    let bss_frame=FrameArea::new_without_clear(sbss_ppn,sbss_ppn.page_count(ebss_ppn),FrameFlags::R|FrameFlags::W);
+    let text_frame=FrameArea::new_without_clear(stext_ppn,stext_ppn.page_count(etext_ppn),FrameFlags::R|FrameFlags::X|FrameFlags::N);
+    let rodata_frame=FrameArea::new_without_clear(srodata_ppn,srodata_ppn.page_count(erodata_ppn),FrameFlags::R|FrameFlags::N);
+    let data_frame=FrameArea::new_without_clear(sdata_ppn,sdata_ppn.page_count(edata_ppn),FrameFlags::R|FrameFlags::W|FrameFlags::N);
+    let bss_frame=FrameArea::new_without_clear(sbss_ppn,sbss_ppn.page_count(ebss_ppn),FrameFlags::R|FrameFlags::W|FrameFlags::N);
 
-    let phys_mem_access_frame=FrameArea::new_without_clear(PhysPageNum::from(0),(PHYS_SPACE_SIZE+PAGE_SIZE-1)/PAGE_SIZE,FrameFlags::R|FrameFlags::W);
+    let phys_mem_access_frame=FrameArea::new_without_clear(PhysPageNum::from(0),(PHYS_SPACE_SIZE+PAGE_SIZE-1)/PAGE_SIZE,FrameFlags::R|FrameFlags::W|FrameFlags::N);
 
     let mut pgtable=PageTable::new();
     pgtable.map(stext_vpn,text_frame);

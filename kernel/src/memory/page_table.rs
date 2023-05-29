@@ -103,6 +103,7 @@ impl PageTable {
         pgtable.frame_set.push(frame);
         pgtable
     }
+    //仅可作为临时使用
     pub fn new_by_ppn(root_ppn:PhysPageNum)->Self{
         Self { root_ppn: (root_ppn), frame_set: Vec::new() }
     }
@@ -183,6 +184,7 @@ impl PageTable {
                     pte1.set_flags(PTEFlags::from(frame.flags()));
                 }
                 None=>{
+                    panic!("map fail!");
                     return false;
                 }
             }
@@ -208,6 +210,18 @@ impl PageTable {
         let satp=((riscv::register::satp::read().bits()>>PPN_WIDTH)<<PPN_WIDTH)|usize::from(self.root_ppn) ;
         riscv::register::satp::write(satp); 
         unsafe {sfence_vma_all();}
+    }
+}
+
+impl Clone for PageTable{
+    fn clone(&self) -> Self {
+        let mut new_pgtable=Self::new();
+        new_pgtable.root_ppn.set_bytes_array(self.root_ppn.get_bytes_array().as_ptr());
+        for i in 1..self.frame_set.len(){
+            //TODO!!
+            //不是所有的frameArea都可以简单的搬起来
+        }
+        new_pgtable
     }
 }
 

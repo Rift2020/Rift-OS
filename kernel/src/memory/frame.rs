@@ -11,6 +11,7 @@ bitflags! {
         const W = 1 << 2;//writable
         const X = 1 << 3;//executable
         const U = 1 << 4;//user
+        const N = 1 << 5;//do not dealloc ! 
     }
 }
 
@@ -85,6 +86,8 @@ impl From<FrameFlags> for PTEFlags {
 
 impl Drop for FrameArea {
     fn drop(&mut self) {
-        FRAME_ALLOCATOR.lock().dealloc(self.ppn,self.count);
+        if self.has_flags(FrameFlags::N)==false{
+            FRAME_ALLOCATOR.lock().dealloc(self.ppn,self.count);
+        }
     }
 }

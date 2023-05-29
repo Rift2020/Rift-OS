@@ -90,6 +90,14 @@ impl PhysPageNum {
         let va=pa_to_va_usize(pa);
         unsafe { core::slice::from_raw_parts_mut(va as *mut u8, 4096) }
     }
+    pub fn set_bytes_array(&mut self,src:*const u8){
+        let pa: PhysAddr = (*self).into();
+        let va=pa_to_va_usize(pa);
+        let ptr=va as *mut u8;
+        unsafe {
+            core::ptr::copy(src,ptr,4096);
+        }
+    }
     pub fn page_count(&self,rhs:PhysPageNum)->usize{
         rhs.0-self.0
     }

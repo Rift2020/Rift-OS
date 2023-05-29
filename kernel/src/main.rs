@@ -126,7 +126,7 @@ pub fn rust_main() -> ! {
         
         let thread4:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         GLOBAL_SCHEDULER.lock().push_thread(thread4);
-    
+        
         let thread5:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         GLOBAL_SCHEDULER.lock().push_thread(thread5);
         
