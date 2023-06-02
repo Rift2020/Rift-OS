@@ -6,13 +6,15 @@ OUTPUT_ARCH(riscv)
 ENTRY(_start)
 BASE_ADDRESS = 0xffffffffc0200000;
 
+ENTRY_ADDRESS = 0x80200000;
+
 SECTIONS
 {
     . = BASE_ADDRESS;
     skernel = .;
 
+    .text ALIGN(4K): AT(ENTRY_ADDRESS) {
     stext = .;
-    .text : {
         *(.text.entry)
         *(.text .text.*)
     }
