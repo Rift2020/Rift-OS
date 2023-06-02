@@ -9,6 +9,7 @@ use crate::config::*;
 use crate::driver::block_device::block_device_test;
 use crate::memory::address::*;
 use crate::memory::allocator::FRAME_ALLOCATOR;
+use crate::my_thread;
 use core::arch::asm;
 use core::mem::forget;
 use riscv;

@@ -21,6 +21,7 @@ mod stdio;
 mod config;
 mod memory;
 mod trap;
+#[macro_use]
 mod proc;
 mod driver;
 mod fs;

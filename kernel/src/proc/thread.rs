@@ -1,7 +1,7 @@
 use core::{cell::UnsafeCell, iter::empty};
 
-use super::{kthread::*, uthread::UThread};
-use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}};
+use super::{kthread::*, uthread::UThread, scheduler::CURRENT_TID};
+use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}, arch::cpu_id};
 use alloc::{boxed::Box, vec::Vec};
 use spin::*;
 use xmas_elf::ElfFile;
@@ -62,6 +62,14 @@ impl Thread {
         thread.uthread=Box::new(UThread::new(entry_addr,thread.kthread.kstack.top_addr(),&mut thread.pgtable));
         thread
     }
+
+}
+
+#[macro_export]
+macro_rules! my_thread {
+    () => {
+        THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].lock().as_mut().unwrap().thread
+    };
 }
 
 impl ThreadPool {
