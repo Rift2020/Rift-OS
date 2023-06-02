@@ -1,8 +1,14 @@
+use core::mem::forget;
+
 use riscv::register::ustatus;
+
+use crate::config::PAGE_SIZE;
 
 use super::address::*;
 use super::allocator::FRAME_ALLOCATOR;
 use super::page_table::PTEFlags;
+
+use xmas_elf::program::Flags;
 
 bitflags! {
     #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq,Debug)]
@@ -45,7 +51,6 @@ impl FrameArea {
 
     }
     pub fn new(ppn: PhysPageNum,count:usize,flags:FrameFlags) -> Self {
-        // page cleaning
         let mut frame=FrameArea{ppn,count,flags:flags.bits() as usize};
         frame.clear();
         frame
@@ -60,6 +65,22 @@ impl FrameArea {
             Some(ppn)=>Some(FrameArea::new(ppn,count,flags)),
             None => None,
         }
+    }
+    pub fn new_by_copy_slice(v_ptr:*const u8,byte_len:usize,flags:FrameFlags)->Option<Self>{ 
+        assert!(byte_len!=0);
+        let count=(byte_len+PAGE_SIZE-1)/PAGE_SIZE;
+        let p=FRAME_ALLOCATOR.lock().alloc(count);
+        match p {
+            Some(ppn)=>{
+                let v_p=pa_to_va_usize(PhysAddr::from(ppn)) as *mut u8;
+                unsafe{
+                    core::ptr::copy(v_ptr,v_p,byte_len);
+                }
+                Some(FrameArea::new_without_clear(ppn,count,flags))
+            },
+            None => None,
+        }
+        
     }
     pub fn ppn(&self)->PhysPageNum{
         self.ppn
@@ -80,7 +101,24 @@ impl FrameArea {
 
 impl From<FrameFlags> for PTEFlags {
     fn from(value: FrameFlags) -> Self {
-        PTEFlags::from_bits(value.bits()).unwrap()|PTEFlags::V
+        let ret=PTEFlags::from_bits((value&(!FrameFlags::N)).bits()).unwrap()|PTEFlags::V;
+        ret
+    }
+}
+
+impl From<Flags> for FrameFlags {
+    fn from(value: Flags) -> Self {
+        let mut frameflag=FrameFlags::empty();
+        if value.is_read(){
+            frameflag|=FrameFlags::R;
+        }
+        if value.is_write(){
+            frameflag|=FrameFlags::W;
+        }
+        if value.is_execute(){
+            frameflag|=FrameFlags::X;
+        }
+        frameflag|FrameFlags::U
     }
 }
 

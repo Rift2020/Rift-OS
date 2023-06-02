@@ -50,14 +50,14 @@ trap_from_user:
 	csrrw s0, sscratch, x0 # s0=sscratch,sscratch=0 (原子) 
 	csrr s1, sstatus
 	csrr s2, sepc
-	csrr s3, stval
-	csrr s4, scause
+	# csrr s3, stval
+	# csrr s4, scause
 	
 	STORE s0, 2
 	STORE s1, 32
 	STORE s2, 33
-	STORE s3, 34
-	STORE s4, 35
+	# STORE s3, 34
+	# STORE s4, 35
 .endm
 
 .macro RESTORE_ALL
@@ -105,14 +105,20 @@ _to_kernel:
 	LOAD x2, 2
 .endm
 
+
 	.section .text
 	.globl __alltraps
 __alltraps:
 	SAVE_ALL
 	mv a0, sp # a0=sp 
-	jal kernel_trap
+	jal trap
 
 	.globl __trapret
 __trapret:
 	RESTORE_ALL
-	sret
+	sret # 切换至user mode，pc=sepc，开中断
+
+	.globl __firstret
+__firstret:
+	call forkret
+	jal __trapret

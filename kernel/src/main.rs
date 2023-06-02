@@ -12,6 +12,7 @@ extern crate alloc;
 extern crate lazy_static;
 #[macro_use]
 extern crate bitflags;
+extern crate riscv;
 
 mod lang_items;
 mod sbi;
@@ -23,6 +24,7 @@ mod trap;
 mod proc;
 mod driver;
 mod fs;
+mod syscall;
 #[path ="board/qemu.rs"]
 mod board;
 #[path = "arch/riscv/mod.rs"]
@@ -33,7 +35,6 @@ use core::arch::global_asm;
 use core::arch::asm;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
-use riscv;
 
 use crate::arch::cpu_id;
 use crate::arch::start_cpu_from_start2;
@@ -43,6 +44,7 @@ use crate::proc::kthread::*;
 use crate::proc::thread;
 use crate::proc::thread::*;
 use crate::proc::scheduler::*;
+use crate::sbi::shutdown;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 
@@ -62,13 +64,14 @@ pub fn rust_main() -> ! {
         
         let pgtable=memory::init();
         pgtable.set_satp_to_root();
-        println!("start other hart");
+        //println!("start other hart");
         let mut kstack_vec:Vec<KStack>=Vec::new();
         for i in 0..CPU_NUM{
             if i==cpu_id(){
                 continue;
             }
-            kstack_vec.push(start_cpu_from_start2(i));
+            //多核启动可以正常启动，但是目前对于串行的测试点暂时起不到帮助作用，所以不启动多核
+            //kstack_vec.push(start_cpu_from_start2(i));
         }
         memory::test();
         
@@ -82,11 +85,27 @@ pub fn rust_main() -> ! {
 
         //driver::block_device::block_device_test();
         let v=FILE_SYSTEM.root_dir().ls();
+        println!("let's see root_dir");
         for i in v{
-            println!("{}",i.get_lfn_name().unwrap());
+            println!("\t{}",i.get_lfn_name().unwrap());
         }
 
+        let mut data=[0u8;4096*16];
+        //println!("{}",(&mut data).len());
+        let dir=FILE_SYSTEM.root_dir();
+        let file=dir.open_file("write").unwrap();
+        let len=file.read(&mut data).ok().unwrap();
+        //println!("len:{}",len);
+        ////println!("{:?}",data);
+        let thread=Box::new(Thread::new_thread_by_elf(&data));
+        let thread_tid=thread.tid;
+        GLOBAL_SCHEDULER.lock().push_thread(thread);
+        THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread_tid);
         
+        println!("user thread exit! now shutdown");
+        shutdown();
+
+        /*
         let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         let thread2_tid=thread2.tid;
         GLOBAL_SCHEDULER.lock().push_thread(thread2);
@@ -104,6 +123,7 @@ pub fn rust_main() -> ! {
         loop {
         
         }
+        */
 
     }
     //除了首个启动的核心，其他核心进入rust_main后将会直接执行该分支
@@ -113,7 +133,7 @@ pub fn rust_main() -> ! {
         let pgtable=memory::map_kernel();
         pgtable.set_satp_to_root();
         memory::test(); 
-        
+/*        
         //我是IDLE
         let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         idle_thread.pgtable=pgtable;
@@ -137,9 +157,12 @@ pub fn rust_main() -> ! {
             GLOBAL_SCHEDULER.lock().push_tid(next_tid);
         }
         println!("all test passed");
-        loop {
+*/
+        println!("i'm another hart");
+        loop {;
             
         }
+
     }
 
 

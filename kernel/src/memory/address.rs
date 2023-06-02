@@ -176,6 +176,9 @@ impl Debug for VirtPageNum{
     }
 }
 
+pub fn pa_to_va(pa:PhysAddr)->VirtAddr{
+    VirtAddr(pa_to_va_usize(pa))
+}
 
 pub fn pa_to_va_usize(pa:PhysAddr)->usize{
     usize::from(pa)+PHYS_VIRT_OFFSET 

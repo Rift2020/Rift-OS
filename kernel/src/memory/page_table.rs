@@ -154,6 +154,10 @@ impl PageTable {
         let pa=PhysAddr::from(ppn);
         PhysAddr(usize::from(pa)+offset)
     }
+    pub fn user_va_to_kernel_va(&mut self,va:VirtAddr)->VirtAddr{
+        let pa=self.find_va_pa(va);
+        pa_to_va(pa)
+    }
     pub fn find_pte(&mut self,vpn:VirtPageNum,alloc:bool)->Option<&mut PageTableEntry>{
         let vpn=vpn.indexes();
         let mut ppn=self.root_ppn;

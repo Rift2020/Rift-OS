@@ -20,3 +20,6 @@ pub const CPU_NUM:usize=2;
 
 pub const MAX_TICK:usize=5;
 pub const MAX_THREAD_NUM:usize=1000;
+
+pub const USER_STACK_SIZE:usize=8*4096;
+pub const USER_STACK_TOP:usize=0x0000_0000_00ff_f000;

@@ -53,7 +53,7 @@ _start2:
     .align 12
     .global bootstack
 boot_stack_lower_bound:
-    .space 4096 * 16 #64KB stack
+    .space 4096 * 64 #256KB stack
     .global bootstacktop
 bootstacktop:
 

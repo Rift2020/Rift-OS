@@ -1,9 +1,12 @@
 use core::{cell::UnsafeCell, iter::empty};
 
-use super::kthread::*;
+use super::{kthread::*, uthread::UThread};
 use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}};
 use alloc::{boxed::Box, vec::Vec};
 use spin::*;
+use xmas_elf::ElfFile;
+use xmas_elf::header;
+use crate::proc::elf::*;
 
 pub type Tid=usize;
 pub type ExitCode=usize;
@@ -24,6 +27,7 @@ pub struct Thread{
     pub tid:Tid,
     pub pgtable:PageTable,
     pub kthread:Box<KThread>,
+    pub uthread:Box<UThread>,
 }
 
 pub struct ThreadInfo{
@@ -37,7 +41,7 @@ pub struct ThreadPool{
 
 impl Thread {
     pub fn empty()->Thread{
-        Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,kthread: Box::new(KThread::empty())  }
+        Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,kthread: Box::new(KThread::empty()),uthread:Box::new(UThread::empty()) }
     }
     pub fn new_thread_same_pgtable()->Thread{
         let pgtable=map_kernel();
@@ -46,7 +50,17 @@ impl Thread {
             tid:THREAD_POOL.get_mut().alloc_tid(),
             pgtable,
             kthread:KThread::new_kthread(root_ppn),
+            uthread:Box::new(UThread::empty())
         }
+    }
+    pub fn new_thread_by_elf(data:&[u8])->Thread{
+        let elf=ElfFile::new(data).expect("illegal elf");
+        assert!(elf.header.pt2.type_().as_type()==header::Type::Executable);
+        let entry_addr=elf.header.pt2.entry_point() as usize;
+        let mut thread=Thread::new_thread_same_pgtable();
+        elf.add_memory_area(&mut thread.pgtable);
+        thread.uthread=Box::new(UThread::new(entry_addr,thread.kthread.kstack.top_addr(),&mut thread.pgtable));
+        thread
     }
 }
 

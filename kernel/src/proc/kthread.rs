@@ -3,6 +3,7 @@ use alloc::boxed::Box;
 use super::thread::*;
 use super::scheduler::CURRENT_TID;
 use super::scheduler::IDLE_TID;
+use super::uthread::TrapFrame;
 use crate::arch::cpu_id;
 use crate::config::*;
 use crate::driver::block_device::block_device_test;
@@ -63,21 +64,22 @@ pub fn yield_(){
     let current_tid=CURRENT_TID.lock()[cpu_id()];//这一行右边表达式不能直接移到下一行current_tid处，会造成死锁(switch_to也要CURRENT_TID的锁)
     THREAD_POOL.get_mut().pool[current_tid].lock().as_mut().unwrap().thread.kthread.switch_to_idle();
 }
+    extern "C" {
+        fn __trapret();
+        fn __firstret();
+    }
 
+#[no_mangle]
 #[repr(align(4))]
 pub fn forkret(){
     println!("hi! switch success! this is a new thread");
-    //let current_tid:usize={CURRENT_TID.lock()[cpu_id()]};
     //如果一个线程曾经切换出去过，那么再次回来后，他将会在switch_to最末尾隐式地释放掉自己进程和目标进程(一般为idle)的锁
     //但是新初始的进程不会这么做，所以我们必须显式地释放他们
     unsafe{
         THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].force_unlock();
         THREAD_POOL.get_mut().pool[IDLE_TID.lock()[cpu_id()]].force_unlock();
     }
-    loop {
-        println!("hi,i'm cutest thread {} ,hi~, now switch to idle_thread !!",CURRENT_TID.lock()[cpu_id()]);
-        yield_();
-    }
+
         
 }
 
@@ -87,25 +89,27 @@ impl Context {
     }
     pub fn new_context(satp:usize)->Context{
         Context {
-            ra: (forkret as usize),
+            ra: (__firstret as usize),
             root_ppn: (satp),
             s: ([0;12]) 
         }
     }
     unsafe fn push_at(self,stack_top_addr:usize)->usize{
-        let ptr=(stack_top_addr as *mut Context).sub(1);
+        let ptr=(stack_top_addr as *mut TrapFrame).sub(1);
+        let ptr=(ptr as *mut Context).sub(1);
         *ptr=self;
         ptr as usize
     }
 }    
 
 impl KThread {
+
     pub fn switch_to(&mut self,target_tid:Tid){
         CURRENT_TID.lock()[cpu_id()]=target_tid;
         unsafe{
             let target_thread=&mut (THREAD_POOL.get_mut().pool[target_tid].lock());
             switch(&mut self.context_addr,&mut (target_thread.as_mut().unwrap().thread.kthread.context_addr));
-            //线程可能会被另外一个idle_thread运行，这样的话，就应该析构另外一个idle，而不是切换过去的那个
+            //线程可能会被另外一个idle_thread运行，这样的话，就应该析构另外一个idle，而不是过去的那个
             //如：thread2先切换到idle_thread1,结果下一次是idle_thread2切换到thread2,没有下三行就会错误的解锁idle_thread1，并且错误的不解锁idle_thread2
             forget(target_thread);
             let idle_tid=IDLE_TID.lock()[cpu_id()];
