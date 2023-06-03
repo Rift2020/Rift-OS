@@ -176,9 +176,9 @@ impl PageTable {
         Some(PhysAddr(usize::from(pa)+offset))
     }
     //你应该首先调用check_user_range检查用户给的指针区域是否是有效的
-    pub fn uva_to_kva(&mut self,va:VirtAddr)->VirtAddr{
+    pub fn uva_to_kusize(&mut self,va:VirtAddr)->usize{
         let pa=self.find_va_pa(va).unwrap();//既然已经检查过了，就不应该是None
-        pa_to_va(pa) 
+        pa_to_va_usize(pa) 
     }
     pub fn find_pte(&mut self,vpn:VirtPageNum,alloc:bool)->Option<&mut PageTableEntry>{
         let vpn=vpn.indexes();

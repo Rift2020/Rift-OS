@@ -91,20 +91,22 @@ pub fn rust_main() -> ! {
         for i in v{
             println!("\t{}",i.get_lfn_name().unwrap());
         }
-
-        let mut data=[0u8;4096*16];
-        //println!("{}",(&mut data).len());
-        let dir=FILE_SYSTEM.root_dir();
-        let file=dir.open_file("write").unwrap();
-        let len=file.read(&mut data).ok().unwrap();
-        //println!("len:{}",len);
-        ////println!("{:?}",data);
-        let thread=Box::new(Thread::new_thread_by_elf(&data));
-        let thread_tid=thread.tid;
-        GLOBAL_SCHEDULER.lock().push_thread(thread);
-        THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread_tid);
-        
-        println!("user thread exit! now shutdown");
+        for i in ["write","uname"]{
+            let mut data=[0u8;4096*16];
+            //println!("{}",(&mut data).len());
+            let dir=FILE_SYSTEM.root_dir();
+            let file=dir.open_file(i).unwrap();
+            file.read(&mut data).ok().unwrap();
+            //println!("len:{}",len);
+            ////println!("{:?}",data);
+            let thread=Box::new(Thread::new_thread_by_elf(&data));
+            let thread_tid=thread.tid;
+            GLOBAL_SCHEDULER.lock().push_thread(thread);
+            THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread_tid);
+            println!("{} test over",i);
+        }
+                
+        println!("user test over! now shutdown");
         shutdown();
 
         /*

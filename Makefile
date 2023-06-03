@@ -61,6 +61,8 @@ gdb:build
     		-ex 'target remote localhost:1234'" &&\
 	tmux -2 attach-session -d
 
+
+
 all:offline
 	cp $(KERNEL_ELF) kernel-qemu
 	cp $(BOOTLOADER) sbi-qemu
