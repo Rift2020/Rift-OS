@@ -1,17 +1,25 @@
+mod syscall_num;
+use core::mem::size_of;
+
 use crate::memory::address::VirtAddr;
+use crate::memory::page_table::PTEFlags;
 use crate::my_thread;
 use crate::proc::kthread::yield_;
 use crate::proc::thread::*;
 use crate::proc::scheduler::CURRENT_TID;
 use crate::arch::cpu_id;
-pub const SYS_WRITE: usize = 64;
-pub const SYS_EXIT: usize = 93;
+use syscall_num::*;
+
 
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
     match syscall_id {
         SYS_WRITE => {
-            
-            let kva=usize::from(my_thread!().pgtable.user_va_to_kernel_va(VirtAddr::from(args[1]))) ;
+            let user_buf=VirtAddr::from(args[1]);
+            let user_buf_end=VirtAddr::from(args[1]+args[2]*size_of::<u8>());
+            if my_thread!().pgtable.check_user_range(user_buf,user_buf_end,PTEFlags::R)==false{
+                return -1;
+            }
+            let kva=usize::from(my_thread!().pgtable.uva_to_kva(VirtAddr::from(args[1]))) ;
             let buf:*const u8=kva as *const u8;
             unsafe{
                 let count=args[2];
@@ -31,3 +39,5 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
         },
     }
 }
+
+

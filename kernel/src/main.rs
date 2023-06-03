@@ -5,6 +5,7 @@
 #![feature(core_panic)]
 #![feature(fn_align)]
 #![feature(naked_functions)]
+#![allow(warnings, unused)]
 
 
 extern crate alloc;

@@ -147,16 +147,38 @@ impl PageTable {
         }
     }
 
-    pub fn find_va_pa(&mut self,va:VirtAddr)->PhysAddr{
-        let pte=self.find_pte(va.vpn(),false).unwrap();
+
+    pub fn check_user_range(&mut self,vstart:VirtAddr,vend:VirtAddr,flags:PTEFlags)->bool{
+        let vend=VirtAddr(vend.0-1);
+        let frame_start:usize=vstart.floor_vpn().into();
+        let frame_end:usize=usize::from(vend.floor_vpn())+1;
+        for vpn in frame_start..frame_end{
+            let pte=self.find_pte(VirtPageNum::from(vpn),false);
+            match pte {
+                Some(pte)=>{
+                    if pte.has_flags(PTEFlags::U|flags)==false{
+                        return false;
+                    }
+                }
+                None=>{
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    pub fn find_va_pa(&mut self,va:VirtAddr)->Option<PhysAddr>{
+        let pte=self.find_pte(va.vpn(),false)?;
         let ppn=pte.get_ppn();
         let offset=va.offset();
         let pa=PhysAddr::from(ppn);
-        PhysAddr(usize::from(pa)+offset)
+        Some(PhysAddr(usize::from(pa)+offset))
     }
-    pub fn user_va_to_kernel_va(&mut self,va:VirtAddr)->VirtAddr{
-        let pa=self.find_va_pa(va);
-        pa_to_va(pa)
+    //你应该首先调用check_user_range检查用户给的指针区域是否是有效的
+    pub fn uva_to_kva(&mut self,va:VirtAddr)->VirtAddr{
+        let pa=self.find_va_pa(va).unwrap();//既然已经检查过了，就不应该是None
+        pa_to_va(pa) 
     }
     pub fn find_pte(&mut self,vpn:VirtPageNum,alloc:bool)->Option<&mut PageTableEntry>{
         let vpn=vpn.indexes();

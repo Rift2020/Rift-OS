@@ -65,7 +65,7 @@ impl Hal for VirtioHal {
     fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
         let current_tid=CURRENT_TID.lock()[cpu_id()];
         let pa=THREAD_POOL.get_mut().pool[current_tid].lock().as_mut().unwrap().thread.pgtable.find_va_pa(address::VirtAddr::from(vaddr));
-        pa.into()
+        pa.unwrap().into()
     }
 }
 
