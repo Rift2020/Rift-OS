@@ -10,6 +10,8 @@ use crate::driver::block_device::block_device_test;
 use crate::memory::address::*;
 use crate::memory::allocator::FRAME_ALLOCATOR;
 use crate::my_thread;
+use crate::timer::get_time_val;
+use crate::timer::set_next_time_interrupt;
 use core::arch::asm;
 use core::mem::forget;
 use riscv;
@@ -80,8 +82,8 @@ pub fn forkret(){
         THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].force_unlock();
         THREAD_POOL.get_mut().pool[IDLE_TID.lock()[cpu_id()]].force_unlock();
     }
-
-        
+    set_next_time_interrupt(); 
+    unsafe{riscv::register::sstatus::set_sie();}
 }
 
 impl Context {

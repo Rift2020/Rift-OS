@@ -4,14 +4,16 @@ use riscv::register::{
         self,
         Trap,
         Exception,
+        Interrupt,
     },
     sepc,
     stvec,
     sscratch,
-    stval,
+    stval, sstatus,
 };
-use crate::proc::uthread::TrapFrame;
+use crate::{proc::{uthread::TrapFrame, kthread::yield_}, timer::{set_next_time_interrupt,get_time_val}};
 use crate::arch::cpu_id;
+
 
 global_asm!(include_str!("trap.asm"));
 
@@ -38,6 +40,7 @@ fn call_syscall(tf: &mut TrapFrame) {
 
 #[no_mangle]
 fn trap(tf: &mut TrapFrame) {
+    unsafe{sstatus::clear_sie();}//进内核态关中断，出内核态开中断(不是严格的边界)，但理论上只要开中断的时候不持有锁就可以，TODO:把锁换成自动开关中断的
     let cause = scause::read().cause();
     let epc = sepc::read();
     let sscratch=sscratch::read();
@@ -48,9 +51,17 @@ fn trap(tf: &mut TrapFrame) {
             panic!("trap handled!")
 
         },
+        Trap::Interrupt(Interrupt::UserTimer)=>{
+            panic!("This is impossible");
+        }
+        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+            set_next_time_interrupt();
+            yield_();
+        }
         _ => {
-            println!("kernel_trap[CPU{}]: cause: {:?}, epc: {:#x}",cpu_id(),cause , epc);
+            eprintln!("kernel_trap[CPU{}]: cause: {:?}, epc: {:#x}",cpu_id(),cause , epc);
             panic!("trap handled!");
         }
     }
+    unsafe{sstatus::set_sie();}
 }

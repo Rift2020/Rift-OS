@@ -45,8 +45,8 @@ impl UThread {
         uthread.trapframe.sepc=entry_addr;
 
         uthread.trapframe.sstatus=0x8000_0002_0000_6000;//权宜之计
-        uthread.trapframe.sstatus|=0x20;
-        uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FFFD;
+        //uthread.trapframe.sstatus|=0x20;
+        //uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FFFD;
         uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FEFF;
 
 

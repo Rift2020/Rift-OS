@@ -27,6 +27,7 @@ mod proc;
 mod driver;
 mod fs;
 mod syscall;
+mod timer;
 #[path ="board/qemu.rs"]
 mod board;
 #[path = "arch/riscv/mod.rs"]
@@ -37,6 +38,9 @@ use core::arch::global_asm;
 use core::arch::asm;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use riscv::register::sstatus;
+use riscv::register::sie;
+use riscv::register::uie;
 
 use crate::arch::cpu_id;
 use crate::arch::start_cpu_from_start2;
@@ -47,6 +51,8 @@ use crate::proc::thread;
 use crate::proc::thread::*;
 use crate::proc::scheduler::*;
 use crate::sbi::shutdown;
+use crate::timer::get_time_val;
+use crate::timer::set_next_time_interrupt;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 
@@ -83,7 +89,15 @@ pub fn rust_main() -> ! {
         let idle_tid=THREAD_POOL.get_mut().insert(idle_thread);
         IDLE_TID.lock()[cpu_id()]=idle_tid;
         CURRENT_TID.lock()[cpu_id()]=idle_tid;
+        
+        unsafe{
+            sie::set_stimer();
+            //sstatus::set_sie();
+            set_next_time_interrupt();
+        }
+        
 
+        
         println!("idle_tid:{}",idle_tid);
         //driver::block_device::block_device_test();
         let dir=FILE_SYSTEM.root_dir().cd("mnt").unwrap();
@@ -103,18 +117,18 @@ pub fn rust_main() -> ! {
             let thread=Box::new(Thread::new_thread_by_elf(&data));
             let thread_tid=GLOBAL_SCHEDULER.lock().push_thread(thread);
             loop {
-                if let Some(next_tid)=GLOBAL_SCHEDULER.lock().pop(){
-                    THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
-                    //看看进程有没有退出
-                    if THREAD_POOL.get_mut().get_status(next_tid)==Status::Killed{
-                        THREAD_POOL.get_mut().remove(next_tid);
-                    }
-                    else{
-                        GLOBAL_SCHEDULER.lock().push_tid(next_tid);
-                    }
+                let next_tid=GLOBAL_SCHEDULER.lock().pop();
+                if next_tid.is_none(){
+                    break;
+                }
+                let next_tid=next_tid.unwrap();
+                THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
+                //看看进程有没有退出
+                if THREAD_POOL.get_mut().get_status(next_tid)==Status::Killed{
+                    THREAD_POOL.get_mut().remove(next_tid);
                 }
                 else{
-                    break;
+                    GLOBAL_SCHEDULER.lock().push_tid(next_tid);
                 }
             }
     

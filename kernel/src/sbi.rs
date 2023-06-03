@@ -2,7 +2,7 @@
 #![allow(unused)]
 
 use core::{arch::asm, panicking::panic};
-const EID_SET_TIMER: isize = 0;
+//const EID_SET_TIMER: isize = 0;
 const EID_CONSOLE_PUTCHAR: isize = 1;
 const EID_CONSOLE_GETCHAR: isize = 2;
 const EID_CLEAR_IPI: isize = 3;
@@ -17,6 +17,9 @@ const FID_GET_SBI_IMPLEMENTATION_ID:isize=1;
 
 const EID_HSM:isize=0x48534D;//Hart State Management
 const FID_HART_START:isize=0x0;
+
+const EID_TIMER:isize = 0x54494D45;
+const FID_SET_TIMER:isize = 0;
 
 #[inline(always)]
 fn sbi_call(extension_id: isize ,function_id: isize, arg0: usize, arg1: usize, arg2: usize) -> (isize,isize) {
@@ -50,4 +53,8 @@ pub fn get_sbi_implementation_id()->isize{
 //启动指定hartid的核心，它将会从start_addr(PA)开始执行，且此时其a1寄存器被设置为opaque的值
 pub fn hart_start(hartid:usize,start_addr:usize,opaque:usize)->isize{
     sbi_call(EID_HSM,FID_HART_START,hartid,start_addr,opaque).0
+}
+
+pub fn set_timer(stime_value:usize)->isize{
+    sbi_call(EID_TIMER,FID_SET_TIMER,stime_value,0,0).0
 }
