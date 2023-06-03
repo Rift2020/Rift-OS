@@ -316,7 +316,7 @@ impl Entry {
         self.sfn.unwrap().cluster
     }
 
-    fn get_sfn(&self) -> Option<([u8; 12], usize)> {
+    pub fn get_sfn(&self) -> Option<([u8; 12], usize)> {
         if self.sfn.is_some() {
             Some(self.sfn.as_ref().unwrap().get_full_name_bytes())
         } else {
@@ -324,7 +324,7 @@ impl Entry {
         }
     }
 
-    fn get_lfn(&self) -> Option<([u8; 13 * 3], usize)> {
+    pub fn get_lfn(&self) -> Option<([u8; 13 * 3], usize)> {
         if self.lfn.is_some() {
             Some(self.lfn.as_ref().unwrap().to_utf8())
         } else {
@@ -444,7 +444,20 @@ impl Entry {
         let option = self.get_lfn();
         if option.is_none() { return None; }
         let (bytes,len)=option.unwrap();
-        Some(String::from_utf8(bytes.to_vec()).unwrap())
+        Some(String::from_utf8((&bytes[..len]).to_vec()).unwrap())
+    }
+    pub fn get_sfn_name(&self)->Option<String>{
+        if self.is_deleted() { return None; }
+        let option = self.get_sfn();
+        if option.is_none() { return None; }
+        let (bytes,len)=option.unwrap();
+        Some(String::from_utf8((&bytes[..len]).to_vec()).unwrap())
+    }
+    pub fn get_name(&self)->Option<String>{
+       if let Some(lfn)=self.get_lfn_name(){
+            return Some(lfn)
+        }
+        self.get_sfn_name()
     }
 
     pub(crate) fn lfn_equal(&self, value: &str) -> bool {

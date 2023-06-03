@@ -14,7 +14,7 @@ lazy_static!{
     pub static ref THREAD_POOL:TrustCell<ThreadPool> =TrustCell::new(ThreadPool::new(MAX_THREAD_NUM));
 }
 
-#[derive(Clone)]
+#[derive(Clone,PartialEq, Eq)]
 pub enum Status {
     Ready,
     Running,
@@ -47,7 +47,7 @@ impl Thread {
         let pgtable=map_kernel();
         let root_ppn=pgtable.root_ppn;
         Thread{
-            tid:THREAD_POOL.get_mut().alloc_tid(),
+            tid:MAX_THREAD_NUM,
             pgtable,
             kthread:KThread::new_kthread(root_ppn),
             uthread:Box::new(UThread::empty())
@@ -90,16 +90,22 @@ impl ThreadPool {
         }
         panic!("pool full ?");
     }
-    pub fn insert(&mut self,thread:Box<Thread>){
+    pub fn insert(&mut self,mut thread:Box<Thread>)->Tid{
         let tid=self.alloc_tid();
+        thread.tid=tid;
         *self.pool[tid].lock()=Some(
             ThreadInfo { thread, status: Status::Ready }
         );
+        tid
         
     }
     pub fn remove(&mut self,tid:Tid){
         debug_assert!(self.pool[tid].lock().is_some());
         *self.pool[tid].lock()=None;
+    }
+    pub fn get_status(&self,tid:Tid)->Status{
+        debug_assert!(self.pool[tid].lock().is_some());
+        self.pool[tid].lock().as_mut().unwrap().status.clone()
     }
     pub fn change_status(&mut self,tid:Tid,status:Status){
         debug_assert!(self.pool[tid].lock().is_some());

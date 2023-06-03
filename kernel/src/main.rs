@@ -80,14 +80,15 @@ pub fn rust_main() -> ! {
         //我是IDLE
         let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         idle_thread.pgtable=pgtable;
-        let idle_tid=idle_thread.tid;
-        IDLE_TID.lock()[cpu_id()]=idle_thread.tid;
-        CURRENT_TID.lock()[cpu_id()]=idle_thread.tid;
-        THREAD_POOL.get_mut().insert(idle_thread);
+        let idle_tid=THREAD_POOL.get_mut().insert(idle_thread);
+        IDLE_TID.lock()[cpu_id()]=idle_tid;
+        CURRENT_TID.lock()[cpu_id()]=idle_tid;
 
+        println!("idle_tid:{}",idle_tid);
         //driver::block_device::block_device_test();
+        let dir=FILE_SYSTEM.root_dir().cd("mnt").unwrap();
         let v=FILE_SYSTEM.root_dir().ls();
-        println!("let's see root_dir");
+        println!("let's see root_dir {}",dir.get_name());
         for i in v{
             println!("\t{}",i.get_lfn_name().unwrap());
         }
@@ -100,9 +101,23 @@ pub fn rust_main() -> ! {
             //println!("len:{}",len);
             ////println!("{:?}",data);
             let thread=Box::new(Thread::new_thread_by_elf(&data));
-            let thread_tid=thread.tid;
-            GLOBAL_SCHEDULER.lock().push_thread(thread);
-            THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(thread_tid);
+            let thread_tid=GLOBAL_SCHEDULER.lock().push_thread(thread);
+            loop {
+                if let Some(next_tid)=GLOBAL_SCHEDULER.lock().pop(){
+                    THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
+                    //看看进程有没有退出
+                    if THREAD_POOL.get_mut().get_status(next_tid)==Status::Killed{
+                        THREAD_POOL.get_mut().remove(next_tid);
+                    }
+                    else{
+                        GLOBAL_SCHEDULER.lock().push_tid(next_tid);
+                    }
+                }
+                else{
+                    break;
+                }
+            }
+    
             println!("{} test over",i);
         }
                 

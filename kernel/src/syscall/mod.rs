@@ -1,5 +1,6 @@
 mod syscall_num;
 mod other;
+mod thread;
 use core::mem::size_of;
 
 use crate::memory::address::VirtAddr;
@@ -12,6 +13,7 @@ use crate::arch::cpu_id;
 use syscall_num::*;
 
 use self::other::*;
+use thread::*;
 
 
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
@@ -33,10 +35,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
             args[2] as isize
         },
         SYS_EXIT => {
-            //TODO
             println!("thread want to exit");
-            yield_();
-            0
+            sys_exit();
+            panic!("exit fail");
+            -1
         },
         SYS_UNAME => {
             sys_uname(args[0] as *const Utsname)

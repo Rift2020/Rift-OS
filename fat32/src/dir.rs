@@ -1,3 +1,4 @@
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use block_device::BlockDevice;
 use crate::bpb::BIOSParameterBlock;
@@ -127,6 +128,9 @@ impl<'a, T> Dir<'a, T>
     pub fn ls(&self)->Vec<Entry>{
         let iter = DirIter::new(self.device, self.fat, self.bpb);
         iter.filter(|x|x.valid_lfn()).collect()
+    }
+    pub fn get_name(&self)->String{
+        self.detail.get_name().unwrap()
     }
     /// Find Long File Name Item, Return Option Type
     fn find_lfn(&self, iter: &mut DirIter<T>, value: &str) -> Option<Entry> {

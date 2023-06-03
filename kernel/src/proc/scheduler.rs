@@ -9,7 +9,7 @@ pub static IDLE_TID:Mutex<[Tid;CPU_NUM]>= Mutex::new([MAX_THREAD_NUM,CPU_NUM]);
 pub static CURRENT_TID:Mutex<[Tid;CPU_NUM]>= Mutex::new([MAX_THREAD_NUM,CPU_NUM]);
 
 pub trait Scheduler {
-    fn push_thread(&mut self,thread:Box<Thread>);//向调度器和线程池都push一个新线程
+    fn push_thread(&mut self,thread:Box<Thread>)->Tid;//向调度器和线程池都push一个新线程
     fn push_tid(&mut self,tid:Tid);//push一个已经在线程池的线程
     fn pop(&mut self)->Option<Tid>;
     fn tick(&mut self)->bool;
@@ -34,9 +34,10 @@ impl RRScheduler{
 }
 
 impl Scheduler for RRScheduler {
-    fn push_thread(&mut self,thread:Box<Thread>) {
-        self.queue.push_front(thread.tid);
-        THREAD_POOL.get_mut().insert(thread);
+    fn push_thread(&mut self,thread:Box<Thread>)->Tid {
+        let tid=THREAD_POOL.get_mut().insert(thread);
+        self.queue.push_front(tid);
+        tid
     }           
     fn push_tid(&mut self,tid:Tid) {
         debug_assert!(THREAD_POOL.get_mut().pool[tid].lock().is_some());

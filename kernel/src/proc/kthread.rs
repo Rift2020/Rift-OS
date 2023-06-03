@@ -110,17 +110,17 @@ impl KThread {
         unsafe{
             let target_thread=&mut (THREAD_POOL.get_mut().pool[target_tid].lock());
             switch(&mut self.context_addr,&mut (target_thread.as_mut().unwrap().thread.kthread.context_addr));
-            //线程可能会被另外一个idle_thread运行，这样的话，就应该析构另外一个idle，而不是过去的那个
+            //线程可能会被另外一个idle_thread运行，这样的话，就应该解锁另外一个idle，而不是过去的那个
             //如：thread2先切换到idle_thread1,结果下一次是idle_thread2切换到thread2,没有下三行就会错误的解锁idle_thread1，并且错误的不解锁idle_thread2
             forget(target_thread);
-            let idle_tid=IDLE_TID.lock()[cpu_id()];
-            THREAD_POOL.get_mut().pool[idle_tid].force_unlock();
+            //解锁在switch_to_idle中进行
         }
 
     }
     pub fn switch_to_idle(&mut self){
         let idle_tid=IDLE_TID.lock()[cpu_id()];
         self.switch_to(idle_tid);
+        unsafe{THREAD_POOL.get_mut().pool[idle_tid].force_unlock();}
     }
     pub const fn empty()->KThread{
         KThread { context_addr: 0, kstack: (KStack::empty()) }
