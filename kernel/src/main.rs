@@ -60,8 +60,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 global_asm!(include_str!("entry.asm"));
 
 pub static INIT_HART:AtomicBool=AtomicBool::new(true);
-pub static NO:Mutex<bool>=Mutex::new(false);
-
+pub static file_lock:Mutex<bool>=Mutex::new(false);
 #[no_mangle]
 pub fn rust_main() -> ! { 
     //首个启动的hart
@@ -93,22 +92,20 @@ pub fn rust_main() -> ! {
         CURRENT_TID.lock()[cpu_id()]=idle_tid;
         
         unsafe{
-            //sie::set_stimer();
+            sie::set_stimer();
             //sstatus::set_sie();
             set_next_time_interrupt();
         }
         
-        let no=NO.try_lock().unwrap();
         
         //driver::block_device::block_device_test();
-        println!("2");
-        let v=FILE_SYSTEM.root_dir().ls();
-        for i in v{
-            println!("\t{}",i.get_lfn_name().unwrap());
-        }
-        for i in ["write","uname","times"]{
+        //let v=FILE_SYSTEM.root_dir().ls();
+        //ls 有bug
+        //for i in v{
+        //    println!("\t{}",i.get_lfn_name().unwrap());
+        //}
+        for i in ["write","uname","times","gettimeofday"]{
             let mut data=[0u8;4096*16];
-            //println!("{}",(&mut data).len());
             FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
             //println!("len:{}",len);
             ////println!("{:?}",data);
@@ -135,6 +132,7 @@ pub fn rust_main() -> ! {
         }
                 
         println!("user test over! now shutdown");
+
         shutdown();
 
         /*

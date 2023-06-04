@@ -22,3 +22,19 @@ pub fn sys_times(tms:*mut Tms)->isize{
     }
     0
 }
+
+pub fn sys_gettimeofday(tv:*mut TimeVal,should_be_null:usize)->isize{
+    if should_be_null!=0{
+        return -1;
+    }
+    let vstart=VirtAddr::from(tv as usize);
+    let vend=VirtAddr::from(tv as usize+size_of::<TimeVal>());
+    if my_thread!().pgtable.check_user_range(vstart,vend,PTEFlags::W)==false{
+        return -1;
+    }
+    let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *mut TimeVal;
+    unsafe{
+        *vpt=TimeVal::get_timeval();
+    } 
+    0
+}

@@ -20,7 +20,7 @@ clean:
 
 build:
 	cd kernel && cargo build
-	rust-objcopy --strip-all $(KERNEL_DEBUG_ELF) -O binary $(KERNEL_DEBUG_BIN)
+	# rust-objcopy --strip-all $(KERNEL_DEBUG_ELF) -O binary $(KERNEL_DEBUG_BIN)
 
 copy_cargo:
 	cp -r kernel/cargo kernel/.cargo
@@ -30,7 +30,7 @@ offline:copy_cargo
 
 release:
 	cd kernel && cargo build --release
-	rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
+	# rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
 
 qemu:release
 	@qemu-system-riscv64 \

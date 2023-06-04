@@ -37,13 +37,21 @@ fn call_syscall(tf: &mut TrapFrame) {
     );
     tf.x[10] = ret as usize;
 }
+#[inline(never)]
+fn add_utime(){
+    my_thread!().tms.tms_utime+=((get_cycle()+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
+    LAST_CYCLE.lock()[cpu_id()]=get_cycle();
+}
+#[inline(never)]
+fn add_stime(){
+    my_thread!().tms.tms_stime+=((get_cycle()+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
+    LAST_CYCLE.lock()[cpu_id()]=get_cycle();
+}
 
 #[no_mangle]
 fn trap(tf: &mut TrapFrame) {
     unsafe{sstatus::clear_sie();}//进内核态关中断，出内核态开中断(不是严格的边界)，但理论上只要开中断的时候不持有锁就可以，TODO:把锁换成自动开关中断的
-    my_thread!().tms.tms_utime+=((get_cycle()+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
-
-    LAST_CYCLE.lock()[cpu_id()]=get_cycle();
+    add_utime();
     let cause = scause::read().cause();
     let epc = sepc::read();
     let sscratch=sscratch::read();
@@ -58,8 +66,6 @@ fn trap(tf: &mut TrapFrame) {
             panic!("This is impossible");
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
-            eprintln!("NO!!!!!!!!!!!!!");
-            my_thread!().tms.tms_utime+=1;
             set_next_time_interrupt();
             yield_();
         }
@@ -68,7 +74,6 @@ fn trap(tf: &mut TrapFrame) {
             panic!("trap handled!");
         }
     }
-    my_thread!().tms.tms_stime+=((get_cycle()+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
-    LAST_CYCLE.lock()[cpu_id()]=get_cycle();
+    add_stime();
     unsafe{sstatus::set_sie();}
 }

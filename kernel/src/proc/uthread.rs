@@ -40,7 +40,7 @@ impl UThread {
 
         let mut uthread=UThread::empty();
         uthread.trapframe.x[4]=cpu_id();
-        uthread.trapframe.x[2]=USER_STACK_TOP-10;//暂时不清楚为什么需要减一点
+        uthread.trapframe.x[2]=USER_STACK_TOP-16000;//暂时不清楚为什么需要减一点
                                                  //似乎user sp既向上又向下移动
         uthread.trapframe.sepc=entry_addr;
 

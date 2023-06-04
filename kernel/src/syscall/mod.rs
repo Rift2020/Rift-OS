@@ -10,11 +10,11 @@ use crate::proc::kthread::yield_;
 use crate::proc::thread::*;
 use crate::proc::scheduler::CURRENT_TID;
 use crate::arch::cpu_id;
-use crate::timer::Tms;
+use crate::timer::*;
 use syscall_num::*;
 
 use self::other::*;
-use self::other::time::sys_times;
+use self::other::time::*;
 use thread::*;
 
 
@@ -47,6 +47,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
         }
         SYS_TIMES => {
             sys_times(args[0] as *mut Tms)
+        }
+        SYS_GETTIMEOFDAY => {
+            sys_gettimeofday(args[0] as *mut TimeVal,args[1])
         }
         _ => {
             panic!("unknown syscall id {}", syscall_id);
