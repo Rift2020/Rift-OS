@@ -1,6 +1,7 @@
 use super::*;
 use crate::header::VirtIOHeader;
 use crate::queue::VirtQueue;
+use _core::sync::atomic::{fence, Ordering};
 use bitflags::*;
 use core::hint::spin_loop;
 use log::*;
@@ -65,6 +66,7 @@ impl<H: Hal> VirtIOBlk<'_, H> {
             spin_loop();
         }
         self.queue.pop_used()?;
+        fence(Ordering::SeqCst);
         match resp.status {
             RespStatus::Ok => Ok(()),
             _ => Err(Error::IoError),

@@ -51,6 +51,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
         SYS_GETTIMEOFDAY => {
             sys_gettimeofday(args[0] as *mut TimeVal,args[1])
         }
+        SYS_NANOSLEEP =>{
+            sys_nanosleep(args[0] as *const TimeSpec,args[1] as *mut TimeSpec)
+        }
         _ => {
             panic!("unknown syscall id {}", syscall_id);
         },

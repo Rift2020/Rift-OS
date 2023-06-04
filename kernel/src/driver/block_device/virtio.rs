@@ -1,18 +1,22 @@
 use core::ptr::NonNull;
 
 use alloc::vec::Vec;
+use riscv::register::satp;
 use virtio_drivers::*;
 
 use spin::Mutex;
 
 use crate::arch::cpu_id;
 use crate::memory::address::{pa_usize_to_va_usize};
+use crate::memory::page_table::PageTable;
 use crate::proc::scheduler::CURRENT_TID;
 use crate::proc::thread::THREAD_POOL;
 use crate::{memory::{frame::{FrameArea, FrameFlags}, address::{self, pa_to_va_usize, va_usize_to_pa, va_usize_to_pa_usize}, allocator::FRAME_ALLOCATOR, self}, config::PHYS_VIRT_OFFSET};
 
+use core::sync::atomic::{AtomicBool, fence};
 use super::BlockDevice;
 
+static vhal:AtomicBool=AtomicBool::new(true);
 const VIRTIO0: usize = 0x10001000;
 
 pub struct VirtioBlock(pub Mutex<VirtIOBlk<'static, VirtioHal>>);
@@ -47,24 +51,28 @@ pub struct VirtioHal;
 
 impl Hal for VirtioHal {
     fn dma_alloc(pages: usize) -> PhysAddr {
+        fence(core::sync::atomic::Ordering::SeqCst);
         let ppn=FRAME_ALLOCATOR.lock().alloc(pages).unwrap();
         let ret=usize::from(address::PhysAddr::from(ppn));
         ret
     }
     
     fn dma_dealloc(paddr: PhysAddr, pages: usize) -> i32 {
+        fence(core::sync::atomic::Ordering::SeqCst);
         let ppn=address::PhysAddr::from(paddr).floor_ppn();
         FRAME_ALLOCATOR.lock().dealloc(ppn,pages);
         0
     }
 
     fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
+        fence(core::sync::atomic::Ordering::SeqCst);
         address::pa_usize_to_va_usize(paddr)
     }
 
     fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
-        let current_tid=CURRENT_TID.lock()[cpu_id()];
-        let pa=THREAD_POOL.get_mut().pool[current_tid].lock().as_mut().unwrap().thread.pgtable.find_va_pa(address::VirtAddr::from(vaddr));
+        fence(core::sync::atomic::Ordering::SeqCst);
+        let mut pgtable=PageTable::new_by_ppn(satp::read().ppn().into());
+        let pa=pgtable.find_va_pa(address::VirtAddr::from(vaddr));
         pa.unwrap().into()
     }
 }

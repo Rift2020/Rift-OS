@@ -1,3 +1,5 @@
+use core::ops::Add;
+
 use riscv::register::{cycle, time};
 use spin::Mutex;
 
@@ -40,10 +42,40 @@ impl TimeVal {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug,PartialEq, Eq,PartialOrd, Ord)]
+pub struct TimeSpec{
+    pub tv_sec :usize,
+    pub tv_nsec:usize,
+}
+
+
+
+impl TimeSpec {
+    pub fn get_timespec()->TimeSpec{
+        let cycle=get_cycle();
+        let sec=cycle/CPU_FREQ;
+        let nsec=cycle%CPU_FREQ*1000_000_000/CPU_FREQ;
+        TimeSpec { tv_sec: sec, tv_nsec: nsec }
+    }
+}
+
+impl Add for TimeSpec {
+    type Output = TimeSpec;
+    fn add(self, rhs: Self) -> Self::Output {
+        let sec=self.tv_sec+rhs.tv_sec+(self.tv_nsec+rhs.tv_nsec)/1000_000_000;
+        let nsec=(self.tv_nsec+rhs.tv_nsec)%1000_000_000;
+        TimeSpec { tv_sec: sec, tv_nsec: nsec }
+    }
+}
+
 pub fn get_cycle()->usize{
     cycle::read()
 }
 
+pub fn get_time()->usize{
+    time::read()
+}
 
 pub fn set_next_time_interrupt(){
     set_timer(time::read()+TIME_INTERRUPT_CYCLES);

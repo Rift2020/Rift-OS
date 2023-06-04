@@ -46,6 +46,7 @@ use riscv::register::uie;
 use crate::arch::cpu_id;
 use crate::arch::start_cpu_from_start2;
 use crate::config::CPU_NUM;
+use crate::driver::block_device::block_device_test;
 use crate::fs::FILE_SYSTEM;
 use crate::proc::kthread::*;
 use crate::proc::thread;
@@ -60,7 +61,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 global_asm!(include_str!("entry.asm"));
 
 pub static INIT_HART:AtomicBool=AtomicBool::new(true);
-pub static file_lock:Mutex<bool>=Mutex::new(false);
+
 #[no_mangle]
 pub fn rust_main() -> ! { 
     //首个启动的hart
@@ -82,7 +83,7 @@ pub fn rust_main() -> ! {
             //多核启动可以正常启动，但是目前对于串行的测试点暂时起不到帮助作用，所以不启动多核
             //kstack_vec.push(start_cpu_from_start2(i));
         }
-        //memory::test();
+        memory::test();
         
         //我是IDLE
         let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
@@ -97,6 +98,10 @@ pub fn rust_main() -> ! {
             set_next_time_interrupt();
         }
         
+        //奇怪的read_block error仍然时隐时现，但是好像拖延一下时间再读写硬盘，会让发生的概率减少十倍，原因未知
+        for i in 0..1000{
+            println!("waiting");
+        }
         
         //driver::block_device::block_device_test();
         //let v=FILE_SYSTEM.root_dir().ls();
@@ -104,9 +109,9 @@ pub fn rust_main() -> ! {
         //for i in v{
         //    println!("\t{}",i.get_lfn_name().unwrap());
         //}
-        for i in ["write","uname","times","gettimeofday"]{
+        for i in ["write","uname","times","gettimeofday","sleep"]{
             let mut data=[0u8;4096*16];
-            FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
+            FILE_SYSTEM.lock().root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
             //println!("len:{}",len);
             ////println!("{:?}",data);
 

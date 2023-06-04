@@ -38,3 +38,21 @@ pub fn sys_gettimeofday(tv:*mut TimeVal,should_be_null:usize)->isize{
     } 
     0
 }
+
+pub fn sys_nanosleep(req:*const TimeSpec,rem:*const TimeSpec)->isize{
+    let ts=TimeSpec::get_timespec();
+    let vstart=VirtAddr::from(req as usize);
+    let vend=VirtAddr::from(req as usize+size_of::<TimeSpec>());
+    if my_thread!().pgtable.check_user_range(vstart,vend,PTEFlags::R)==false{
+        return -1;
+    }
+    let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *const TimeSpec;
+    let req_ts=unsafe{
+        *vpt
+    }+ts;
+    
+    while TimeSpec::get_timespec()<req_ts{
+        ;
+    }
+    0
+}
