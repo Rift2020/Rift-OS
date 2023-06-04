@@ -38,6 +38,7 @@ use core::arch::global_asm;
 use core::arch::asm;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use spin::Mutex;
 use riscv::register::sstatus;
 use riscv::register::sie;
 use riscv::register::uie;
@@ -51,7 +52,7 @@ use crate::proc::thread;
 use crate::proc::thread::*;
 use crate::proc::scheduler::*;
 use crate::sbi::shutdown;
-use crate::timer::get_time_val;
+use crate::timer::get_cycle;
 use crate::timer::set_next_time_interrupt;
 use core::sync::atomic::{AtomicBool, Ordering};
 
@@ -59,6 +60,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 global_asm!(include_str!("entry.asm"));
 
 pub static INIT_HART:AtomicBool=AtomicBool::new(true);
+pub static NO:Mutex<bool>=Mutex::new(false);
 
 #[no_mangle]
 pub fn rust_main() -> ! { 
@@ -81,7 +83,7 @@ pub fn rust_main() -> ! {
             //多核启动可以正常启动，但是目前对于串行的测试点暂时起不到帮助作用，所以不启动多核
             //kstack_vec.push(start_cpu_from_start2(i));
         }
-        memory::test();
+        //memory::test();
         
         //我是IDLE
         let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
@@ -91,29 +93,26 @@ pub fn rust_main() -> ! {
         CURRENT_TID.lock()[cpu_id()]=idle_tid;
         
         unsafe{
-            sie::set_stimer();
+            //sie::set_stimer();
             //sstatus::set_sie();
             set_next_time_interrupt();
         }
         
-
+        let no=NO.try_lock().unwrap();
         
-        println!("idle_tid:{}",idle_tid);
         //driver::block_device::block_device_test();
-        let dir=FILE_SYSTEM.root_dir().cd("mnt").unwrap();
+        println!("2");
         let v=FILE_SYSTEM.root_dir().ls();
-        println!("let's see root_dir {}",dir.get_name());
         for i in v{
             println!("\t{}",i.get_lfn_name().unwrap());
         }
-        for i in ["write","uname"]{
+        for i in ["write","uname","times"]{
             let mut data=[0u8;4096*16];
             //println!("{}",(&mut data).len());
-            let dir=FILE_SYSTEM.root_dir();
-            let file=dir.open_file(i).unwrap();
-            file.read(&mut data).ok().unwrap();
+            FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
             //println!("len:{}",len);
             ////println!("{:?}",data);
+
             let thread=Box::new(Thread::new_thread_by_elf(&data));
             let thread_tid=GLOBAL_SCHEDULER.lock().push_thread(thread);
             loop {

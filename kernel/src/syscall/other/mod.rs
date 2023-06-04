@@ -1,3 +1,4 @@
+pub mod time;
 use core::mem::size_of;
 
 use alloc::string::String;
@@ -50,7 +51,7 @@ lazy_static!{
 }
 */
 
-pub fn sys_uname(buf:*const Utsname)->isize{
+pub fn sys_uname(buf:*mut Utsname)->isize{
     let vstart=VirtAddr::from(buf as usize);
     let vend=VirtAddr::from(buf as usize+size_of::<Utsname>());
     if my_thread!().pgtable.check_user_range(vstart,vend,PTEFlags::W)==false{

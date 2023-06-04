@@ -61,7 +61,24 @@ gdb:build
     		-ex 'target remote localhost:1234'" &&\
 	tmux -2 attach-session -d
 
-
+gdb2:release
+	@tmux new-session -d \
+		"qemu-system-riscv64 \
+			-machine virt \
+    		-nographic \
+			-kernel $(KERNEL_ELF)\
+    		-bios $(BOOTLOADER) \
+			-m $(MEMORY_SIZE) \
+			-smp $(CPU_NUM) \
+			-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
+			-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0\
+    		-s -S" && \
+    tmux split-window -h \
+		"riscv64-unknown-elf-gdb \
+			-ex 'file $(KERNEL_DEBUG_ELF)' \
+    		-ex 'set arch riscv:rv64' \
+    		-ex 'target remote localhost:1234'" &&\
+	tmux -2 attach-session -d
 
 all:offline
 	cp $(KERNEL_ELF) kernel-qemu

@@ -10,9 +10,11 @@ use crate::proc::kthread::yield_;
 use crate::proc::thread::*;
 use crate::proc::scheduler::CURRENT_TID;
 use crate::arch::cpu_id;
+use crate::timer::Tms;
 use syscall_num::*;
 
 use self::other::*;
+use self::other::time::sys_times;
 use thread::*;
 
 
@@ -35,13 +37,16 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
             args[2] as isize
         },
         SYS_EXIT => {
-            println!("thread want to exit");
+            //println!("thread want to exit");
             sys_exit();
             panic!("exit fail");
             -1
         },
         SYS_UNAME => {
-            sys_uname(args[0] as *const Utsname)
+            sys_uname(args[0] as *mut Utsname)
+        }
+        SYS_TIMES => {
+            sys_times(args[0] as *mut Tms)
         }
         _ => {
             panic!("unknown syscall id {}", syscall_id);

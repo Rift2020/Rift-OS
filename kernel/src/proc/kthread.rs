@@ -10,7 +10,9 @@ use crate::driver::block_device::block_device_test;
 use crate::memory::address::*;
 use crate::memory::allocator::FRAME_ALLOCATOR;
 use crate::my_thread;
-use crate::timer::get_time_val;
+use crate::timer::LAST_CYCLE;
+use crate::timer::TIME_INTERRUPT_CYCLES;
+use crate::timer::get_cycle;
 use crate::timer::set_next_time_interrupt;
 use core::arch::asm;
 use core::mem::forget;
@@ -64,8 +66,10 @@ pub unsafe extern "C" fn switch(current_context_va: &mut usize, target_context_v
 }
 //出让cpu，yield是保留字，你不应该在持有着任何锁时调用该函数
 pub fn yield_(){
+    my_thread!().tms.tms_stime+=((get_cycle()+TIME_INTERRUPT_CYCLES/2)/TIME_INTERRUPT_CYCLES) as isize;
     let current_tid=CURRENT_TID.lock()[cpu_id()];//这一行右边表达式不能直接移到下一行current_tid处，会造成死锁(switch_to也要CURRENT_TID的锁)
     THREAD_POOL.get_mut().pool[current_tid].lock().as_mut().unwrap().thread.kthread.switch_to_idle();
+    LAST_CYCLE.lock()[cpu_id()]=get_cycle();
 }
     extern "C" {
         fn __trapret();
