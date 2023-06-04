@@ -87,6 +87,7 @@ pub fn forkret(){
         THREAD_POOL.get_mut().pool[IDLE_TID.lock()[cpu_id()]].force_unlock();
     }
     set_next_time_interrupt(); 
+    LAST_CYCLE.lock()[cpu_id()]=get_cycle();
     unsafe{riscv::register::sstatus::set_sie();}
 }
 

@@ -39,12 +39,12 @@ fn call_syscall(tf: &mut TrapFrame) {
 }
 #[inline(never)]
 fn add_utime(){
-    my_thread!().tms.tms_utime+=((get_cycle()+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
+    my_thread!().tms.tms_utime+=((get_cycle()-LAST_CYCLE.lock()[cpu_id()]+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
     LAST_CYCLE.lock()[cpu_id()]=get_cycle();
 }
 #[inline(never)]
 fn add_stime(){
-    my_thread!().tms.tms_stime+=((get_cycle()+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
+    my_thread!().tms.tms_stime+=((get_cycle()-LAST_CYCLE.lock()[cpu_id()]+timer::TIME_INTERRUPT_CYCLES/2)/timer::TIME_INTERRUPT_CYCLES) as isize;
     LAST_CYCLE.lock()[cpu_id()]=get_cycle();
 }
 
