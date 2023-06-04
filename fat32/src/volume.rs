@@ -1,4 +1,5 @@
 use core::str;
+use alloc::vec::Vec;
 use block_device::BlockDevice;
 use core::fmt::{
     Debug,
@@ -81,6 +82,30 @@ impl<T> Volume<T>
                           self.device,
                           self.bpb.fat1()),
         }
+    }
+    pub fn check_path_vec(&self,v:&Vec<&str>)->isize{
+        let mut dir=self.root_dir();
+        for i in v{
+            let exist=dir.exist(i);
+            match exist {
+                None=>{
+                    return -1;
+                }
+                Some(et)=>{
+                    if et.is_file(){
+                        return -2;
+                    }
+                    else{
+                        dir=match dir.cd(i) {
+                            Ok(d)=>d,
+                            Err(e)=>return -3,
+                        }
+                    }
+                }
+            }
+
+        }
+        0
     }
 }
 

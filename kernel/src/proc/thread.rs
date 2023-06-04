@@ -2,7 +2,7 @@ use core::{cell::UnsafeCell, iter::empty};
 
 use super::{kthread::*, uthread::UThread, scheduler::CURRENT_TID};
 use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}, arch::cpu_id, timer::Tms};
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{boxed::Box, vec::Vec, string::String};
 use spin::*;
 use xmas_elf::ElfFile;
 use xmas_elf::header;
@@ -27,6 +27,7 @@ pub struct Thread{
     pub tid:Tid,
     pub pgtable:PageTable,
     pub tms:Tms,
+    pub cwd:String,
     pub kthread:Box<KThread>,
     pub uthread:Box<UThread>,
 }
@@ -42,7 +43,7 @@ pub struct ThreadPool{
 
 impl Thread {
     pub fn empty()->Thread{
-        Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,tms:Tms::empty(),kthread: Box::new(KThread::empty()),uthread:Box::new(UThread::empty()) }
+        Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,tms:Tms::empty(),cwd:String::new(),kthread: Box::new(KThread::empty()),uthread:Box::new(UThread::empty()) }
     }
     pub fn new_thread_same_pgtable()->Thread{
         let pgtable=map_kernel();
@@ -51,6 +52,7 @@ impl Thread {
             tid:MAX_THREAD_NUM,
             pgtable,
             tms:Tms::empty(),
+            cwd:String::new(),
             kthread:KThread::new_kthread(root_ppn),
             uthread:Box::new(UThread::empty())
         }

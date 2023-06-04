@@ -104,12 +104,11 @@ pub fn rust_main() -> ! {
         }
         
         //driver::block_device::block_device_test();
-        //let v=FILE_SYSTEM.root_dir().ls();
-        //ls 有bug
-        //for i in v{
-        //    println!("\t{}",i.get_lfn_name().unwrap());
-        //}
-        for i in ["write","uname","times","gettimeofday","sleep"]{
+        let v=FILE_SYSTEM.lock().root_dir().ls();
+        for i in v{
+            println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
+        }
+        for i in ["write","uname","times","gettimeofday","sleep","getcwd"]{
             let mut data=[0u8;4096*16];
             FILE_SYSTEM.lock().root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
             //println!("len:{}",len);

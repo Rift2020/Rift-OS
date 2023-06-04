@@ -1,6 +1,7 @@
 mod syscall_num;
 mod other;
 mod thread;
+mod fs;
 use core::mem::size_of;
 
 use crate::memory::address::VirtAddr;
@@ -13,6 +14,7 @@ use crate::arch::cpu_id;
 use crate::timer::*;
 use syscall_num::*;
 
+use self::fs::sys_getcwd;
 use self::other::*;
 use self::other::time::*;
 use thread::*;
@@ -53,6 +55,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
         }
         SYS_NANOSLEEP =>{
             sys_nanosleep(args[0] as *const TimeSpec,args[1] as *mut TimeSpec)
+        }
+        SYS_GETCWD =>{
+            sys_getcwd(args[0] as *mut char,args[1])
         }
         _ => {
             panic!("unknown syscall id {}", syscall_id);
