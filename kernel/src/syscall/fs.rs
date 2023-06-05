@@ -121,6 +121,8 @@ pub fn push_inner(inn:FileInner)->usize{
     return ret;
 }
 
+
+
 pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
     //TODO:flag,mode
     let mut _path=match get_user_string(filename) {
@@ -146,7 +148,6 @@ pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
         Some(inn)=>inn.clone(),
     };
 
-    println!("4");
     match open(inner, &_path,OFlags::from_bits_truncate(mode as u32)){
         Some(inn)=>{
             return push_inner(inn) as isize;
@@ -207,4 +208,38 @@ pub fn sys_write(fd:isize,buf:*mut u8,count:usize)->isize{
     }
     let ret=fwrite(inn,slice);
     ret
+}
+
+pub fn sys_dup(fd:isize)->isize{
+    if fd  as usize>=my_thread!().fd_table.len(){
+        return -1;
+    }
+    let inn=match my_thread!().fd_table[fd as usize].clone() {
+        None=>return -1,
+        Some(inner)=>inner,
+    };
+    push_inner(inn) as isize
+}
+
+pub fn sys_dup3(fd:isize,new_fd:isize,f:usize)->isize{
+    if fd  as usize>=my_thread!().fd_table.len(){
+        return -1;
+    }
+    let inn=match my_thread!().fd_table[fd as usize].clone() {
+        None=>return -1,
+        Some(inner)=>inner,
+    };
+    if new_fd==fd{
+        return new_fd;
+    }
+    let new_fd=new_fd as usize;
+    let mut lk=THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].lock();
+    if lk.as_mut().unwrap().thread.fd_table.len()<=new_fd{
+        lk.as_mut().unwrap().thread.fd_table.resize(new_fd+1,None);
+    }
+    if lk.as_mut().unwrap().thread.fd_table[new_fd].is_some(){
+        return -1;
+    }
+    lk.as_mut().unwrap().thread.fd_table[new_fd]=Some(inn);
+    new_fd as isize
 }

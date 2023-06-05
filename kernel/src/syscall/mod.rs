@@ -16,7 +16,7 @@ use crate::timer::*;
 use alloc::string::String;
 use syscall_num::*;
 
-use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close, sys_read, sys_write};
+use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close, sys_read, sys_write, sys_dup, sys_dup3};
 use self::other::*;
 use self::other::time::*;
 use thread::*;
@@ -62,6 +62,12 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
         }
         SYS_READ => {
             sys_read(args[0] as isize,args[1] as *mut u8,args[2])
+        }
+        SYS_DUP => {
+            sys_dup(args[0] as isize)
+        }
+        SYS_DUP3=>{
+            sys_dup3(args[0] as isize,args[1] as isize,args[2])
         }
         _ => {
             panic!("unknown syscall id {}", syscall_id);

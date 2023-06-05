@@ -99,7 +99,7 @@ pub fn rust_main() -> ! {
         }
         
         //奇怪的read_block error仍然时隐时现，但是好像拖延一下时间再读写硬盘，会让发生的概率减少十倍，原因未知
-        for i in 0..1000{
+        for i in 0..2000{
             println!("waiting");
         }
         
@@ -108,7 +108,7 @@ pub fn rust_main() -> ! {
         for i in v{
             println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
         }
-        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open"]{
+        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2"]{
         //for i in ["close"]{
             let mut data=[0u8;4096*16];
             FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();

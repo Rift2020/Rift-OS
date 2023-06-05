@@ -19,7 +19,7 @@ clean:
 	cd kernel && cargo clean
 
 build:
-	cd kernel && cargo build
+	cd kernel && cargo build --offline
 	# rust-objcopy --strip-all $(KERNEL_DEBUG_ELF) -O binary $(KERNEL_DEBUG_BIN)
 
 copy_cargo:
