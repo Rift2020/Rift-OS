@@ -1,3 +1,4 @@
+
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use block_device::BlockDevice;
@@ -111,7 +112,6 @@ impl<'a, T> Dir<'a, T>
     /// Check if file or dir is exist or not, Return Option Type
     pub fn exist(&self, value: &str) -> Option<Entry> {
         let mut iter = DirIter::new(self.device, self.fat, self.bpb);
-
         match sfn_or_lfn(value) {
             NameType::SFN => iter.find(|d| d.sfn_equal(value)),
             NameType::LFN => self.find_lfn(&mut iter, value),

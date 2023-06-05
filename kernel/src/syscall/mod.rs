@@ -14,7 +14,7 @@ use crate::arch::cpu_id;
 use crate::timer::*;
 use syscall_num::*;
 
-use self::fs::sys_getcwd;
+use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat};
 use self::other::*;
 use self::other::time::*;
 use thread::*;
@@ -57,12 +57,31 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
             sys_nanosleep(args[0] as *const TimeSpec,args[1] as *mut TimeSpec)
         }
         SYS_GETCWD =>{
-            sys_getcwd(args[0] as *mut char,args[1])
+            sys_getcwd(args[0] as *mut u8,args[1])
         }
+        SYS_CHDIR =>{
+            sys_chdir(args[0] as *const char)
+        }
+        SYS_MKDIRAT =>{
+            sys_mkdirat(args[0] as i32,args[1] as *const char,args[2])
+        }
+
+
         _ => {
             panic!("unknown syscall id {}", syscall_id);
         },
     }
+}
+
+pub fn user_buf_to_vptr(buf:usize,byte_len:usize,flag:PTEFlags)->Option<usize>{
+    let vstart=VirtAddr::from(buf as usize);
+    let vend=VirtAddr::from(buf as usize+byte_len);
+    if my_thread!().pgtable.check_user_range(vstart,vend,flag)==false{
+        return None;
+    }
+    Some(my_thread!().pgtable.uva_to_kusize(vstart))
+
+
 }
 
 

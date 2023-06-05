@@ -10,5 +10,5 @@ use spin::Mutex;
 use alloc::sync::Arc;
 
 lazy_static!{
-    pub static ref FILE_SYSTEM:Mutex<Volume<BlockDeviceForFS>>=Mutex::new(Volume::new(BlockDeviceForFS::global()));
+    pub static ref FILE_SYSTEM:Volume<BlockDeviceForFS>=Volume::new(BlockDeviceForFS::global());
 }

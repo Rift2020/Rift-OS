@@ -83,7 +83,7 @@ impl<T> Volume<T>
                           self.bpb.fat1()),
         }
     }
-    pub fn check_path_vec(&self,v:&Vec<&str>)->isize{
+    pub fn check_path_vec(&self,v:&[&str])->isize{
         let mut dir=self.root_dir();
         for i in v{
             let exist=dir.exist(i);
