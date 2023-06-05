@@ -4,6 +4,7 @@ mod thread;
 mod fs;
 use core::mem::size_of;
 
+use crate::fs::fs::fwrite;
 use crate::memory::address::VirtAddr;
 use crate::memory::page_table::PTEFlags;
 use crate::my_thread;
@@ -15,7 +16,7 @@ use crate::timer::*;
 use alloc::string::String;
 use syscall_num::*;
 
-use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close, sys_read};
+use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close, sys_read, sys_write};
 use self::other::*;
 use self::other::time::*;
 use thread::*;
@@ -24,20 +25,7 @@ use thread::*;
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
     match syscall_id {
         SYS_WRITE => {
-            let user_buf=VirtAddr::from(args[1]);
-            let user_buf_end=VirtAddr::from(args[1]+args[2]*size_of::<u8>());
-            if my_thread!().pgtable.check_user_range(user_buf,user_buf_end,PTEFlags::R)==false{
-                return -1;
-            }
-            let kva=my_thread!().pgtable.uva_to_kusize(VirtAddr::from(args[1])) ;
-            let buf:*const u8=kva as *const u8;
-            unsafe{
-                let count=args[2];
-                for i in 0..count{
-                    print!("{}",*(buf.add(i)) as char);
-                }
-            }
-            args[2] as isize
+            sys_write(args[0] as isize,args[1] as *mut u8, args[2])
         },
         SYS_EXIT => {
             //println!("thread want to exit");

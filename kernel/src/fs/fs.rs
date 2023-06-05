@@ -12,18 +12,31 @@ use super::FILE_SYSTEM;
 use super::BlockDeviceForFS;
 
 pub struct File_(Arc<Mutex<FileInner>>);
+bitflags! {
+    #[derive(Debug,Clone)]
+    pub struct OFlags:u32{
+        const O_RDONLY  = 0;
+        const O_WRONLY  = 1 << 0;
+        const O_RDWR    = 1 << 1;
+        const O_CREATE  = 1 << 6;
+        const O_EXCL    = 1 << 7;
+        const O_TRUNC   = 1 << 9;
+        const O_APPEND  = 1 << 10;
+    }
+}
 #[derive(Clone,Debug)]
 pub struct FileInner{
    pub dir:Option<Dir<'static,BlockDeviceForFS>>,
    pub file:Option<File<'static,BlockDeviceForFS>>,
    pub std:usize,
+   pub o_flag:OFlags,
    pub path:String,
    pub flag:u8,
 }
 
 impl FileInner {
     pub fn empty()->Self{
-        FileInner { dir: None, file: None,std:0 ,path: String::new(), flag: 0 }
+        FileInner { dir: None, file: None,std:0 ,o_flag:OFlags::empty(),path: String::new(), flag: 0 }
     }
 }
 
@@ -120,7 +133,7 @@ pub fn mkdir(dir:FileInner,path:&String)->isize{
         return -1;
     }
 }
-pub fn open(dir:FileInner,path:&String)->Option<FileInner>{
+pub fn open(dir:FileInner,path:&String,flag:OFlags)->Option<FileInner>{
     let path_vec:Vec<&str>=path.split('/').collect();
     let mut mdir=FILE_SYSTEM.root_dir();
     let mut walk_ret=0;
@@ -137,16 +150,18 @@ pub fn open(dir:FileInner,path:&String)->Option<FileInner>{
     if walk_ret==0{
         match mdir.open_file(path_vec[path_vec.len()-1]) {
             Ok(file_)=>{
-                return Some(FileInner { dir: None, file: Some(file_),std:0, path: path.clone(), flag: 0 });
+                return Some(FileInner { dir: None, file: Some(file_),std:0,o_flag:flag, path: path.clone(), flag: 0 });
             }
             Err(e)=>{
                 match mdir.cd(path_vec[path_vec.len()-1]) {
                         Ok(dir)=>{
-                            return Some(FileInner { dir: Some(dir), file: None,std:0, path: path.clone(), flag: 0 });
+                            return Some(FileInner { dir: Some(dir), file: None,std:0, o_flag:flag,path: path.clone(), flag: 0 });
                         },
                         Err(e)=>{
-                            return None;
-                        
+                            mdir.create_file(path_vec[path_vec.len()-1]).unwrap();
+                            let f=mdir.open_file(path_vec[path_vec.len()-1]).unwrap();
+                            return Some(FileInner { dir: None, file: Some(f),std:0, o_flag:flag,path: path.clone(), flag: 0 });
+
                         }
                 }
             }
@@ -175,5 +190,26 @@ pub fn fread(inn:FileInner,buf:&mut[u8])->isize{
             }
         } 
     }
+    ret as isize
+}
+pub fn fwrite(inn:FileInner,buf:&[u8])->isize{
+    if inn.file.is_none(){
+        return -1;
+    }
+    let blen=buf.len();
+    let mut ret=0;
+    if inn.o_flag.contains(OFlags::O_TRUNC){
+        ret=match inn.file.unwrap().write(buf, fat32::file::WriteType::OverWritten){
+            Ok(())=>buf.len(),
+            Err(e)=>return -1,
+        };
+    }
+    else {
+        ret=match inn.file.unwrap().write(buf, fat32::file::WriteType::Append){
+            Ok(())=>buf.len(),
+            Err(e)=>return -1,
+        };
+    }
+
     ret as isize
 }

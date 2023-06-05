@@ -129,7 +129,7 @@ pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
     };
     if (dirfd==-100){
         _path=String::from("/")+my_thread!().cwd.as_str()+_path.as_str();
-        match  open(FileInner::empty(),&_path){
+        match  open(FileInner::empty(),&_path,OFlags::from_bits_truncate(mode as u32)){
             Some(inn)=>{
                 return push_inner(inn) as isize;
             },
@@ -147,7 +147,7 @@ pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
     };
 
     println!("4");
-    match open(inner, &_path){
+    match open(inner, &_path,OFlags::from_bits_truncate(mode as u32)){
         Some(inn)=>{
             return push_inner(inn) as isize;
         },
@@ -182,4 +182,29 @@ pub fn sys_read(fd:isize,buf:*mut u8,count:usize)->isize{
         Some(inner)=>inner,
     };
     fread(inn,slice)   
+}
+
+pub fn sys_write(fd:isize,buf:*mut u8,count:usize)->isize{
+    let vptr=match user_buf_to_vptr(buf as usize,count,PTEFlags::W){
+        None=>return -1,
+        Some(vp)=>vp,
+    }as *mut u8;
+    let slice=unsafe{slice_from_raw_parts(vptr,count).as_ref().unwrap()};
+    if fd  as usize>=my_thread!().fd_table.len(){
+        return -1;
+    }
+    let inn=match my_thread!().fd_table[fd as usize].clone() {
+        None=>return -1,
+        Some(inner)=>inner,
+    };
+    if inn.std==2{
+            unsafe{
+                for i in 0..count{
+                    print!("{}",*(vptr.add(i)) as char);
+                }
+            }
+            return count  as isize;
+    }
+    let ret=fwrite(inn,slice);
+    ret
 }

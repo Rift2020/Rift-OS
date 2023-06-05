@@ -1,7 +1,7 @@
 use core::{cell::UnsafeCell, iter::empty};
 
 use super::{kthread::*, uthread::UThread, scheduler::CURRENT_TID};
-use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}, arch::cpu_id, timer::Tms, fs::fs::{File_, FileInner}};
+use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}, arch::cpu_id, timer::Tms, fs::fs::{File_, FileInner, OFlags}};
 use alloc::{boxed::Box, vec::Vec, string::String};
 use spin::*;
 use xmas_elf::ElfFile;
@@ -57,9 +57,9 @@ impl Thread {
             kthread:KThread::new_kthread(root_ppn),
             fd_table:{
                 let mut v=Vec::new();
-                v.push(Some(FileInner { dir: None, file: None,std:1 ,path: String::new(), flag: 0 }));
-                v.push(Some(FileInner { dir: None, file: None,std:2 ,path: String::new(), flag: 0 }));
-                v.push(Some(FileInner { dir: None, file: None,std:3 ,path: String::new(), flag: 0 }));
+                v.push(Some(FileInner { dir: None, file: None,std:1 ,o_flag:OFlags::O_RDONLY, path: String::new(), flag: 0 }));
+                v.push(Some(FileInner { dir: None, file: None,std:2 ,o_flag:OFlags::O_WRONLY,path: String::new(), flag: 0 }));
+                v.push(Some(FileInner { dir: None, file: None,std:3 ,o_flag:OFlags::O_WRONLY,path: String::new(), flag: 0 }));
                 v
             },
             uthread:Box::new(UThread::empty())
