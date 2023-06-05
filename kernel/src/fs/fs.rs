@@ -12,7 +12,6 @@ use super::FILE_SYSTEM;
 use super::BlockDeviceForFS;
 
 pub struct File_(Arc<Mutex<FileInner>>);
-
 #[derive(Clone,Debug)]
 pub struct FileInner{
    pub dir:Option<Dir<'static,BlockDeviceForFS>>,
@@ -155,4 +154,26 @@ pub fn open(dir:FileInner,path:&String)->Option<FileInner>{
 
     }
     return None;
+}
+
+pub fn fread(inn:FileInner,buf:&mut[u8])->isize{
+    if inn.file.is_none(){
+        return -1;
+    }
+    let blen=buf.len();
+    let mut ret=0;
+    for i in 0..blen/512+1{
+        let iter=inn.file.unwrap().read_per_sector().next();
+        match iter {
+            None=>return 0,
+            Some(data)=>{
+                let (data_slice,len)=data;
+                let start=i*512;
+                let len=core::cmp::min(len,blen-start);
+                buf[start..start+len].copy_from_slice(&data_slice[..len]);
+                ret=start+len;
+            }
+        } 
+    }
+    ret as isize
 }

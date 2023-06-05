@@ -5,6 +5,8 @@ use crate::fs::fs::*;
 use crate::fs::FILE_SYSTEM;
 use core::clone;
 use core::mem::size_of;
+use core::ptr::slice_from_raw_parts;
+use core::ptr::slice_from_raw_parts_mut;
 use crate::memory::address::VirtAddr;
 
 use crate::arch::cpu_id;
@@ -163,4 +165,21 @@ pub fn sys_close(fd:isize)->isize{
         }
     }
     -1
+}
+
+pub fn sys_read(fd:isize,buf:*mut u8,count:usize)->isize{
+    let vptr=match user_buf_to_vptr(buf as usize,count,PTEFlags::W){
+        None=>return -1,
+        Some(vp)=>vp,
+    }as *mut u8;
+     
+    let mut slice=unsafe{slice_from_raw_parts_mut(vptr,count).as_mut().unwrap()};
+    if fd  as usize>=my_thread!().fd_table.len(){
+        return -1;
+    }
+    let inn=match my_thread!().fd_table[fd as usize].clone() {
+        None=>return -1,
+        Some(inner)=>inner,
+    };
+    fread(inn,slice)   
 }
