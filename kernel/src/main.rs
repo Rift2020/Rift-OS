@@ -108,7 +108,8 @@ pub fn rust_main() -> ! {
         for i in v{
             println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
         }
-        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir"]{
+        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_"]{
+        //for i in ["mkdir_"]{
             let mut data=[0u8;4096*16];
             FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
             //println!("len:{}",len);

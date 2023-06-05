@@ -13,6 +13,7 @@ use crate::proc::scheduler::CURRENT_TID;
 use crate::proc::thread::*;
 use crate::memory::page_table::*;
 
+use super::get_user_string;
 use super::user_buf_to_vptr;
 pub fn sys_getcwd(buf:*mut u8,size:usize)->isize{
     if buf as usize ==0 {
@@ -22,7 +23,6 @@ pub fn sys_getcwd(buf:*mut u8,size:usize)->isize{
     let vstart=VirtAddr::from(buf as usize);
     let vend=VirtAddr::from(buf as usize+size_of::<u8>()*size);
     if my_thread!().pgtable.check_user_range(vstart,vend,PTEFlags::W)==false{
-        println!("2");
         return 0;
     }
     let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *mut u8;
@@ -62,7 +62,7 @@ pub fn sys_chdir(s:*const char)->isize{
     ret
 }
 
-pub fn sys_mkdirat(dirfd:i32,path:*const char,mode:usize)->isize{
+pub fn sys_mkdirat(dirfd:i32,path:*const u8,mode:usize)->isize{
 
     //TODO:不完整的检查
     let vpt=match user_buf_to_vptr(path as usize,size_of::<char>(),PTEFlags::R){
@@ -104,4 +104,63 @@ pub fn sys_mkdirat(dirfd:i32,path:*const char,mode:usize)->isize{
         }
     };
     mkdir(inner,&_path)
+}
+
+pub fn push_inner(inn:FileInner)->usize{
+    let mut lk=THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].lock();
+    for i in 0..lk.as_mut().unwrap().thread.fd_table.len(){
+        if lk.as_mut().unwrap().thread.fd_table[i].is_none(){
+            lk.as_mut().unwrap().thread.fd_table[i]=Some(inn);
+            return i;
+        }
+    }
+    lk.as_mut().unwrap().thread.fd_table.push(Some(inn));
+    let ret=lk.as_mut().unwrap().thread.fd_table.len()-1;
+    return ret;
+}
+
+pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
+    //TODO:flag,mode
+    let mut _path=match get_user_string(filename) {
+        None=>return -1,
+        Some(s)=>s,
+    };
+    if (dirfd==-100){
+        _path=String::from("/")+my_thread!().cwd.as_str()+_path.as_str();
+        match  open(FileInner::empty(),&_path){
+            Some(inn)=>{
+                return push_inner(inn) as isize;
+            },
+            None=>{
+                return -1;
+            }
+        }
+    }
+    if dirfd as usize>=my_thread!().fd_table.len(){
+        return -1;
+    }
+    let inner=match my_thread!().fd_table[dirfd as usize].clone(){
+        None=>return -1,
+        Some(inn)=>inn.clone(),
+    };
+
+    println!("4");
+    match open(inner, &_path){
+        Some(inn)=>{
+            return push_inner(inn) as isize;
+        },
+        None=>{
+            return -1;
+        }
+    }
+}
+
+pub fn sys_close(fd:isize)->isize{
+    if my_thread!().fd_table.len()>fd as usize{
+        if my_thread!().fd_table[fd as usize].is_some(){
+            my_thread!().fd_table[fd as usize]=None;
+            return 0;
+        }
+    }
+    -1
 }

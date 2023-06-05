@@ -50,6 +50,7 @@ fn add_stime(){
 
 #[no_mangle]
 fn trap(tf: &mut TrapFrame) {
+    //println!("tf:{:#x}",tf.sepc);
     unsafe{sstatus::clear_sie();}//进内核态关中断，出内核态开中断(不是严格的边界)，但理论上只要开中断的时候不持有锁就可以，TODO:把锁换成自动开关中断的
     add_utime();
     let cause = scause::read().cause();

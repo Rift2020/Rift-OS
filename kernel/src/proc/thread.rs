@@ -55,7 +55,13 @@ impl Thread {
             tms:Tms::empty(),
             cwd:String::new(),
             kthread:KThread::new_kthread(root_ppn),
-            fd_table:Vec::new(),
+            fd_table:{
+                let mut v=Vec::new();
+                v.push(Some(FileInner { dir: None, file: None,std:1 ,path: String::new(), flag: 0 }));
+                v.push(Some(FileInner { dir: None, file: None,std:2 ,path: String::new(), flag: 0 }));
+                v.push(Some(FileInner { dir: None, file: None,std:3 ,path: String::new(), flag: 0 }));
+                v
+            },
             uthread:Box::new(UThread::empty())
         }
     }

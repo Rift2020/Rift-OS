@@ -33,6 +33,7 @@ release:
 	# rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
 
 qemu:release
+	@cp ~/Music/sdcard.img ./sdcard.img
 	@qemu-system-riscv64 \
 		-machine virt \
     	-nographic \
@@ -43,6 +44,7 @@ qemu:release
     	-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
 		-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 gdb:build
+	@cp ~/Music/sdcard.img ./sdcard.img
 	@tmux new-session -d \
 		"qemu-system-riscv64 \
 			-machine virt \

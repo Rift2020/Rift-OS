@@ -12,9 +12,10 @@ use crate::proc::thread::*;
 use crate::proc::scheduler::CURRENT_TID;
 use crate::arch::cpu_id;
 use crate::timer::*;
+use alloc::string::String;
 use syscall_num::*;
 
-use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat};
+use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close};
 use self::other::*;
 use self::other::time::*;
 use thread::*;
@@ -63,9 +64,14 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
             sys_chdir(args[0] as *const char)
         }
         SYS_MKDIRAT =>{
-            sys_mkdirat(args[0] as i32,args[1] as *const char,args[2])
+            sys_mkdirat(args[0] as i32,args[1] as *const u8,args[2])
         }
-
+        SYS_OPENAT =>{
+            sys_openat(args[0] as isize,args[1] as *const u8,args[2] as isize,args[3])
+        }
+        SYS_CLOSE =>{
+            sys_close(args[0] as isize)
+        }
 
         _ => {
             panic!("unknown syscall id {}", syscall_id);
@@ -84,4 +90,26 @@ pub fn user_buf_to_vptr(buf:usize,byte_len:usize,flag:PTEFlags)->Option<usize>{
 
 }
 
+pub fn get_user_string(s:*const u8)->Option<String>{
+    let vstart=VirtAddr::from(s as usize);
+    //TODO：不完整的检查
+    let vend=VirtAddr::from(s as usize+size_of::<char>());
+    if my_thread!().pgtable.check_user_range(vstart, vend,PTEFlags::W)==false{
+        return None;
+    }
+    let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *const u8;
+    let mut new_path=String::new();
+    unsafe{
+        for i in 0..4096{ 
+            if *vpt.add(i)==0{
+                break;
+            }
+            new_path.push(char::from_u32((*vpt.add(i)) as u32).unwrap());
 
+            if i==4096-1{
+                return None;
+            }
+        }
+    }
+    Some(new_path)
+}

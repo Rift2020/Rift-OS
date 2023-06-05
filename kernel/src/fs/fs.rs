@@ -17,13 +17,14 @@ pub struct File_(Arc<Mutex<FileInner>>);
 pub struct FileInner{
    pub dir:Option<Dir<'static,BlockDeviceForFS>>,
    pub file:Option<File<'static,BlockDeviceForFS>>,
+   pub std:usize,
    pub path:String,
    pub flag:u8,
 }
 
 impl FileInner {
     pub fn empty()->Self{
-        FileInner { dir: None, file: None, path: String::new(), flag: 0 }
+        FileInner { dir: None, file: None,std:0 ,path: String::new(), flag: 0 }
     }
 }
 
@@ -100,7 +101,6 @@ pub fn walk(dir:&mut Dir<'static,BlockDeviceForFS>,path_slice:&[&str])->isize{
 }
 
 pub fn mkdir(dir:FileInner,path:&String)->isize{
-    
     let path_vec:Vec<&str>=path.split('/').collect();
     let mut mdir=FILE_SYSTEM.root_dir();
     let mut walk_ret=0;
@@ -114,10 +114,45 @@ pub fn mkdir(dir:FileInner,path:&String)->isize{
         mdir=dir.dir.unwrap();
         walk_ret=walk(&mut mdir,&path_vec[..path_vec.len()-1]);
     }
-    if walk_ret==0&&mdir.create_dir(path_vec[path_vec.len()-1]).is_ok(){
+    if walk_ret==0&&mdir.create_dir(&path_vec[path_vec.len()-1]).is_ok(){
         return 0;
     }
     else{
         return -1;
     }
+}
+pub fn open(dir:FileInner,path:&String)->Option<FileInner>{
+    let path_vec:Vec<&str>=path.split('/').collect();
+    let mut mdir=FILE_SYSTEM.root_dir();
+    let mut walk_ret=0;
+    if path_vec[0]==""{
+        walk_ret=walk(&mut mdir,&path_vec[1..path_vec.len()-1]);
+    }
+    else{
+        if dir.dir.is_none(){
+            return None;
+        }
+        mdir=dir.dir.unwrap();
+        walk_ret=walk(&mut mdir,&path_vec[..path_vec.len()-1]);
+    }
+    if walk_ret==0{
+        match mdir.open_file(path_vec[path_vec.len()-1]) {
+            Ok(file_)=>{
+                return Some(FileInner { dir: None, file: Some(file_),std:0, path: path.clone(), flag: 0 });
+            }
+            Err(e)=>{
+                match mdir.cd(path_vec[path_vec.len()-1]) {
+                        Ok(dir)=>{
+                            return Some(FileInner { dir: Some(dir), file: None,std:0, path: path.clone(), flag: 0 });
+                        },
+                        Err(e)=>{
+                            return None;
+                        
+                        }
+                }
+            }
+        } 
+
+    }
+    return None;
 }
