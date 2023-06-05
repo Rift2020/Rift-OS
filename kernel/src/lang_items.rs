@@ -1,5 +1,5 @@
 use core::{panic::PanicInfo, cell::UnsafeCell};
-use crate::eprintln;
+use crate::{eprintln, sbi};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -13,7 +13,7 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         eprintln!("Panicked: {}", info.message().unwrap());
     }
-    loop {}
+    sbi::shutdown();
 }
 
 //不提供任何多线程下的保护，但能通过编译
