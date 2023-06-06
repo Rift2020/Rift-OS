@@ -13,6 +13,9 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         eprintln!("Panicked: {}", info.message().unwrap());
     }
+    loop{
+
+    }
     sbi::shutdown();
 }
 

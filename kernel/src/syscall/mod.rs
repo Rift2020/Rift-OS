@@ -2,6 +2,8 @@ mod syscall_num;
 mod other;
 mod thread;
 mod fs;
+mod mm;
+mod proc;
 use core::mem::size_of;
 
 use crate::fs::fs::fwrite;
@@ -12,17 +14,20 @@ use crate::proc::kthread::yield_;
 use crate::proc::thread::*;
 use crate::proc::scheduler::CURRENT_TID;
 use crate::arch::cpu_id;
+use crate::proc::uthread::TrapFrame;
 use crate::timer::*;
 use alloc::string::String;
 use syscall_num::*;
 
 use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close, sys_read, sys_write, sys_dup, sys_dup3};
+use self::mm::sys_brk;
 use self::other::*;
 use self::other::time::*;
+use self::proc::{sys_clone, sys_wait};
 use thread::*;
 
 
-pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
+pub fn syscall(syscall_id: usize, args: [usize; 6],tf:TrapFrame) -> isize{
     match syscall_id {
         SYS_WRITE => {
             sys_write(args[0] as isize,args[1] as *mut u8, args[2])
@@ -68,6 +73,28 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize{
         }
         SYS_DUP3=>{
             sys_dup3(args[0] as isize,args[1] as isize,args[2])
+        }
+        SYS_BRK=>{
+            sys_brk(args[0])
+        }
+        SYS_CLONE=>{
+            sys_clone(args[0], args[1], args[2], args[3], args[4],tf)
+        }
+        SYS_WAIT4=>{
+            sys_wait(args[0] as isize,args[1],args[2])
+        }
+        SYS_SCHED_YIELD=>{
+            yield_();
+            0
+        }
+        SYS_GETPID=>{
+            my_thread!().tid as isize
+        }
+        SYS_GETPPID=>{
+            (match my_thread!().father_tid{
+                None=>0,
+                Some(tid)=>tid,
+            }) as isize
         }
         _ => {
             panic!("unknown syscall id {}", syscall_id);

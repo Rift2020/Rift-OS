@@ -89,25 +89,32 @@ impl Debug for PageTableEntry{
 pub struct PageTable{
     pub root_ppn:PhysPageNum,
     pub frame_set:Vec<FrameArea>,
+    pub brk:VirtAddr,
 }
 
 
 
 impl PageTable {
     pub const fn empty()->Self{
-        PageTable { root_ppn: PhysPageNum(0), frame_set: Vec::new() }
+        PageTable { root_ppn: PhysPageNum(0), frame_set: Vec::new() ,brk:VirtAddr(0)}
     }
     pub fn new()->Self {
         let frame=FrameArea::new_by_alloc(1,FrameFlags::R|FrameFlags::W).unwrap();
-        let mut pgtable=Self{root_ppn:frame.ppn,frame_set:Vec::new()};
+        let mut pgtable=Self{root_ppn:frame.ppn,frame_set:Vec::new(),brk:VirtAddr(0)};
         pgtable.frame_set.push(frame);
         pgtable
     }
     //仅可作为临时使用
     pub fn new_by_ppn(root_ppn:PhysPageNum)->Self{
-        Self { root_ppn: (root_ppn), frame_set: Vec::new() }
+        Self { root_ppn: (root_ppn), frame_set: Vec::new(),brk:VirtAddr(0) }
     }
-
+    pub fn get_brk(&self)->VirtAddr{
+        self.brk
+    }
+    pub fn set_brk(&mut self,va:VirtAddr)->isize{
+        self.brk=va;
+        0
+    }
     //depth必须为[0,2]
     fn print_pgtable(root_ppn:PhysPageNum,depth:u8){
         assert!(depth<=2);
@@ -243,9 +250,12 @@ impl Clone for PageTable{
     fn clone(&self) -> Self {
         let mut new_pgtable=Self::new();
         new_pgtable.root_ppn.set_bytes_array(self.root_ppn.get_bytes_array().as_ptr());
+        //复制除了 (root_ppn,以及标记不用释放) 以外的页
         for i in 1..self.frame_set.len(){
-            //TODO!!
-            //不是所有的frameArea都可以简单的搬起来
+            if self.frame_set[i].has_flags(FrameFlags::N){
+                continue;
+            }
+            new_pgtable.frame_set.push(self.frame_set[i].clone());
         }
         new_pgtable
     }

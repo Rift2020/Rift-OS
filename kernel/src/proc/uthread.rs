@@ -58,5 +58,11 @@ impl UThread {
         *ptr=self.trapframe;
         ptr as usize
     }
-
+    pub fn new_by_tf(kstack_top_addr:usize,tf:TrapFrame,sepc:usize,sp:usize)->UThread{
+        let mut new_uthread=UThread{trapframe:tf.clone()};
+        new_uthread.trapframe.sepc=sepc;
+        new_uthread.trapframe.x[2]=sp;
+        unsafe{new_uthread.push_at_tf(kstack_top_addr);}
+        new_uthread
+    }
 }

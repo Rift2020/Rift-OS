@@ -33,7 +33,8 @@ fn call_syscall(tf: &mut TrapFrame) {
     tf.sepc += 4;
     let ret = crate::syscall::syscall(
        tf.x[17],
-        [tf.x[10], tf.x[11], tf.x[12], tf.x[13], tf.x[14], tf.x[15]]
+        [tf.x[10], tf.x[11], tf.x[12], tf.x[13], tf.x[14], tf.x[15]],
+        tf.clone()
     );
     tf.x[10] = ret as usize;
 }
@@ -50,7 +51,7 @@ fn add_stime(){
 
 #[no_mangle]
 fn trap(tf: &mut TrapFrame) {
-    //println!("tf:{:#x}",tf.sepc);
+    //println!("tf:{:?}",tf);
     unsafe{sstatus::clear_sie();}//进内核态关中断，出内核态开中断(不是严格的边界)，但理论上只要开中断的时候不持有锁就可以，TODO:把锁换成自动开关中断的
     add_utime();
     let cause = scause::read().cause();

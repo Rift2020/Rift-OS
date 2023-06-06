@@ -186,7 +186,7 @@ pub fn sys_read(fd:isize,buf:*mut u8,count:usize)->isize{
 }
 
 pub fn sys_write(fd:isize,buf:*mut u8,count:usize)->isize{
-    let vptr=match user_buf_to_vptr(buf as usize,count,PTEFlags::W){
+    let vptr=match user_buf_to_vptr(buf as usize,count,PTEFlags::R){
         None=>return -1,
         Some(vp)=>vp,
     }as *mut u8;

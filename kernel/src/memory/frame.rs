@@ -66,6 +66,13 @@ impl FrameArea {
             None => None,
         }
     }
+    pub fn new_by_alloc_noclear(count:usize,flags:FrameFlags)->Option<Self>{
+        let p=FRAME_ALLOCATOR.lock().alloc(count);
+        match p {
+            Some(ppn)=>Some(FrameArea::new_without_clear(ppn,count,flags)),
+            None => None,
+        }
+    }
     pub fn new_by_copy_slice(v_ptr:*const u8,byte_len:usize,flags:FrameFlags)->Option<Self>{ 
         assert!(byte_len!=0);
         let count=(byte_len+PAGE_SIZE-1)/PAGE_SIZE;
@@ -119,6 +126,23 @@ impl From<Flags> for FrameFlags {
             frameflag|=FrameFlags::X;
         }
         frameflag|FrameFlags::U
+    }
+}
+
+impl Clone for FrameArea{
+    fn clone(&self) -> Self {
+        let new_fa=match Self::new_by_alloc_noclear(self.count,self.flags()){
+            None=>panic!("FrameArea:OOM"),
+            Some(f)=>f,
+        };
+        let mut src_ppn=self.ppn;
+        let mut new_ppn=new_fa.ppn;
+        for i in 0..self.count{
+            src_ppn.0=self.ppn.0+i;
+            new_ppn.0=new_fa.ppn.0+i;
+            new_ppn.set_bytes_array(src_ppn.get_bytes_array().as_ptr());
+        }
+        new_fa
     }
 }
 

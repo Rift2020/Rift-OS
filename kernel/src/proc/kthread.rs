@@ -79,22 +79,23 @@ pub fn yield_(){
 #[no_mangle]
 #[repr(align(4))]
 pub fn forkret(){
-    println!("hi! switch success! this is a new thread");
+    //println!("hi! switch success! this is a new thread");
     //如果一个线程曾经切换出去过，那么再次回来后，他将会在switch_to最末尾隐式地释放掉自己进程和目标进程(一般为idle)的锁
     //但是新初始的进程不会这么做，所以我们必须显式地释放他们
     unsafe{
         THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].force_unlock();
         THREAD_POOL.get_mut().pool[IDLE_TID.lock()[cpu_id()]].force_unlock();
     }
+    //println!("satp {}", riscv::register::satp::read().bits());
     set_next_time_interrupt(); 
     LAST_CYCLE.lock()[cpu_id()]=get_cycle();
     unsafe{riscv::register::sstatus::set_sie();}
 }
 
 impl Context {
-    pub const fn empty()->Context{
-        Context { ra: 0, root_ppn: 0, s: [0;12] }
-    }
+    //pub const fn empty()->Context{
+    //    Context { ra: 0, root_ppn: 0, s: [0;12] }
+    //}
     pub fn new_context(satp:usize)->Context{
         Context {
             ra: (__firstret as usize),

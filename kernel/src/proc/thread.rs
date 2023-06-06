@@ -1,6 +1,6 @@
 use core::{cell::UnsafeCell, iter::empty};
 
-use super::{kthread::*, uthread::UThread, scheduler::CURRENT_TID};
+use super::{kthread::*, uthread::{UThread, TrapFrame}, scheduler::CURRENT_TID};
 use crate::{config::*, lang_items::TrustCell, memory::{page_table::PageTable, map_kernel}, arch::cpu_id, timer::Tms, fs::fs::{File_, FileInner, OFlags}};
 use alloc::{boxed::Box, vec::Vec, string::String};
 use spin::*;
@@ -25,17 +25,19 @@ pub enum Status {
 
 pub struct Thread{
     pub tid:Tid,
+    pub father_tid:Option<Tid>,
+    pub child_tid:Vec<Tid>,
     pub pgtable:PageTable,
     pub tms:Tms,
     pub cwd:String,
     pub fd_table:Vec<Option<FileInner>>,
     pub kthread:Box<KThread>,
-    pub uthread:Box<UThread>,
+    pub uthread:Box<UThread>,//这实际上只在初始化时有效，之后，真实的tf已经在内核栈上了
 }
 
 pub struct ThreadInfo{
     pub thread:Box<Thread>,
-    status:Status,
+    pub status:Status,
 }
 
 pub struct ThreadPool{
@@ -44,13 +46,37 @@ pub struct ThreadPool{
 
 impl Thread {
     pub fn empty()->Thread{
-        Thread { tid: MAX_THREAD_NUM, pgtable:PageTable::empty() ,tms:Tms::empty(),cwd:String::new(),fd_table:Vec::new(),kthread: Box::new(KThread::empty()),uthread:Box::new(UThread::empty()) }
+        Thread { 
+            tid: MAX_THREAD_NUM, 
+            father_tid:None,
+            child_tid:Vec::new(),
+            pgtable:PageTable::empty() ,
+            tms:Tms::empty(),
+            cwd:String::new(),
+            fd_table:Vec::new(),
+            kthread: Box::new(KThread::empty()),
+            uthread:Box::new(UThread::empty()) 
+        }
+    }
+
+    pub fn fork(&self,sp:usize,mut tf:TrapFrame)->Thread{
+        tf.x[10]=0;
+        let mut new_thread=Thread::empty();
+        new_thread.father_tid=Some(self.tid);
+        new_thread.pgtable=self.pgtable.clone();
+        new_thread.cwd=self.cwd.clone();
+        new_thread.fd_table=self.fd_table.clone();
+        new_thread.kthread=KThread::new_kthread(new_thread.pgtable.root_ppn);
+        new_thread.uthread=Box::new(UThread::new_by_tf(new_thread.kthread.kstack.top_addr(),tf,tf.sepc,sp));
+        new_thread
     }
     pub fn new_thread_same_pgtable()->Thread{
         let pgtable=map_kernel();
         let root_ppn=pgtable.root_ppn;
         Thread{
             tid:MAX_THREAD_NUM,
+            father_tid:None,
+            child_tid:Vec::new(),
             pgtable,
             tms:Tms::empty(),
             cwd:String::new(),
@@ -75,12 +101,22 @@ impl Thread {
         thread
     }
 
+
 }
+
+
 
 #[macro_export]
 macro_rules! my_thread {
     () => {
         THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].lock().as_mut().unwrap().thread
+    };
+}
+
+#[macro_export]
+macro_rules! my_lock {
+    () => {
+        THREAD_POOL.get_mut().pool[CURRENT_TID.lock()[cpu_id()]].lock()
     };
 }
 
@@ -102,8 +138,11 @@ impl ThreadPool {
         }
         panic!("pool full ?");
     }
-    pub fn insert(&mut self,mut thread:Box<Thread>)->Tid{
+    pub fn insert(&mut self,mut thread:Box<Thread>)->Tid{ 
         let tid=self.alloc_tid();
+        if thread.father_tid.is_some(){
+            self.pool[thread.father_tid.unwrap()].lock().as_mut().unwrap().thread.child_tid.push(tid);
+        }
         thread.tid=tid;
         *self.pool[tid].lock()=Some(
             ThreadInfo { thread, status: Status::Ready }
