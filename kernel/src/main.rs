@@ -108,8 +108,8 @@ pub fn rust_main() -> ! {
         for i in v{
             println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
         }
-        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield"]{
-        //for i in ["exit"]{
+        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield","getpid","wait","waitpid","getppid","brk"]{
+        //for i in ["waitpid"]{
             let mut data=[0u8;4096*20];
             FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
             //println!("len:{}",len);
@@ -125,7 +125,7 @@ pub fn rust_main() -> ! {
                 let next_tid=next_tid.unwrap();
                 THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
                 //看看进程有没有退出
-                if THREAD_POOL.get_mut().get_status(next_tid)==Status::Killed{
+                if let Status::Killed(a)=THREAD_POOL.get_mut().get_status(next_tid){
                 }
                 else{
                     GLOBAL_SCHEDULER.lock().push_tid(next_tid);

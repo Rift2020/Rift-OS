@@ -23,6 +23,7 @@ impl ElfExt for ElfFile<'_> {
            }
            let va=VirtAddr::from(ph.virtual_addr() as usize);
            let mem_size =ph.mem_size() as usize;
+           pgtable.set_brk(VirtAddr(va.0+mem_size));
             let data = match ph.get_data(self).unwrap() {
                 SegmentData::Undefined(data) => data,
                 _ => panic!(),

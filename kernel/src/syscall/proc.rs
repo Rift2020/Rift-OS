@@ -36,7 +36,7 @@ pub fn sys_clone(flags:usize,child_stack:usize,ptid:usize,tls:usize,ctid:usize,t
     ret
 }
 
-pub fn sys_wait(pid:isize,sstatus:usize,opt:usize)->isize{
+pub fn sys_wait(pid:isize,status:usize,opt:usize)->isize{
     if pid==-1{
         loop {
             let len=my_thread!().child_tid.len();
@@ -45,16 +45,17 @@ pub fn sys_wait(pid:isize,sstatus:usize,opt:usize)->isize{
             }
             for i in 0..len{
                 let ctid=my_thread!().child_tid[i];
-                if THREAD_POOL.get_mut().pool[ctid].lock().as_ref().unwrap().status==Status::Killed{
+                let stat=THREAD_POOL.get_mut().pool[ctid].lock().as_ref().unwrap().status.clone();
+                if let Status::Killed(exitcode)=stat{
                     THREAD_POOL.get_mut().remove(ctid);
                     my_thread!().child_tid.remove(i);
-                    let vpt=user_buf_to_vptr(sstatus,size_of::<usize>(),PTEFlags::W);
+                    let vpt=user_buf_to_vptr(status,size_of::<i32>(),PTEFlags::W);
                     match vpt {
                         None=>return -1,
                         Some(p)=>{
-                            let ptr=p as *mut isize;
+                            let ptr=p as *mut i32;
                             unsafe {
-                                *ptr=0;
+                                *ptr=(exitcode<<8) as i32;
                             }
                         }
                     }
@@ -83,13 +84,26 @@ pub fn sys_wait(pid:isize,sstatus:usize,opt:usize)->isize{
         }
         let ctid=ctid as usize;
         loop {
-            if THREAD_POOL.get_mut().pool[ctid].lock().as_ref().unwrap().status==Status::Killed{
+            let stat=THREAD_POOL.get_mut().pool[ctid].lock().as_ref().unwrap().status.clone();
+            if let Status::Killed(exitcode)=stat{
                 THREAD_POOL.get_mut().remove(ctid);
                 my_thread!().child_tid.remove(ind);
+                let vpt=user_buf_to_vptr(status,size_of::<i32>(),PTEFlags::W);
+                    match vpt {
+                        None=>return -1,
+                        Some(p)=>{
+                            let ptr=p as *mut i32;
+                            unsafe {
+                                //感谢bite_the_disk的代码启示了我，不然我怎么也想不到还有24位这种逆天数据
+                                *ptr=(exitcode<<8) as i32;
+                            }
+                        }
+                    }
+
                 return ctid as isize;
             }
             yield_();
         }
     }
-    0
+    -1
 }

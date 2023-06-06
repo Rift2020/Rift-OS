@@ -34,7 +34,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6],tf:TrapFrame) -> isize{
         },
         SYS_EXIT => {
             //println!("thread want to exit");
-            sys_exit();
+            sys_exit(args[0] as isize);
             panic!("exit fail");
             -1
         },
@@ -92,7 +92,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6],tf:TrapFrame) -> isize{
         }
         SYS_GETPPID=>{
             (match my_thread!().father_tid{
-                None=>0,
+                None=>1,
                 Some(tid)=>tid,
             }) as isize
         }

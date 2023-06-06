@@ -9,7 +9,7 @@ use xmas_elf::header;
 use crate::proc::elf::*;
 
 pub type Tid=usize;
-pub type ExitCode=usize;
+pub type ExitCode=isize;
 lazy_static!{
     pub static ref THREAD_POOL:TrustCell<ThreadPool> =TrustCell::new(ThreadPool::new(MAX_THREAD_NUM));
 }
@@ -20,7 +20,7 @@ pub enum Status {
     Running,
     LightSleeping,//可中断
     DeepSleeping,//不可中断
-    Killed,
+    Killed(ExitCode),//ExitCode
 }
 
 pub struct Thread{
