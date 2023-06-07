@@ -354,8 +354,6 @@ switch(&mut self.context_addr,&mut THREAD_POOL.get_mut().pool[target_tid].lock()
 
 ### 致谢
 
-(排名区分先后)
-
 - 非常感谢mit的6.s081，它让我第一次一窥操作系统内核，感受到编写内核的挑战性和趣味
 - 感谢rcore-tutorial，Rift-OS最初的开发很大程度上参考了rcore
 - 感谢南京大学jyy，哦豁，你的计组和OS课很炫啦，有很多其他正经课看不到的新东西(真希望哪天可以入你门下(想peach))
