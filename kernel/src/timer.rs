@@ -9,7 +9,11 @@ use crate::sbi::set_timer;
 
 
 pub const TIME_INTERRUPT_CYCLES:usize=CPU_FREQ/TIME_INTERRUPT_PER_SEC;
+
+//记录CYCLE数值
 pub static LAST_CYCLE:Mutex<[usize;CPU_NUM]> =Mutex::new([0;CPU_NUM]);
+//通过trap开始，到(trap结束 或 yield开始)，(yield结束到trap结束，中间的时间就是该线程内核态时间
+//而从trap结束，到下一个trap开始，中间的时间就是该线程用户态的时间
 
 #[repr(C)]
 #[derive(Clone, Copy,Debug)]

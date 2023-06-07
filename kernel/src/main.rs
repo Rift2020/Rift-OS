@@ -75,6 +75,7 @@ pub fn rust_main() -> ! {
         let pgtable=memory::init();
         pgtable.set_satp_to_root();
         //println!("start other hart");
+        //多核启动部分
         let mut kstack_vec:Vec<KStack>=Vec::new();
         for i in 0..CPU_NUM{
             if i==cpu_id(){
@@ -85,13 +86,14 @@ pub fn rust_main() -> ! {
         }
         memory::test();
         
-        //我是IDLE
+        //初始化IDLE
         let mut idle_thread:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
         idle_thread.pgtable=pgtable;
         let idle_tid=THREAD_POOL.get_mut().insert(idle_thread);
         IDLE_TID.lock()[cpu_id()]=idle_tid;
         CURRENT_TID.lock()[cpu_id()]=idle_tid;
         
+        //准备定时器
         unsafe{
             sie::set_stimer();
             //sstatus::set_sie();
@@ -104,11 +106,13 @@ pub fn rust_main() -> ! {
         }
         
         //driver::block_device::block_device_test();
-        let v=FILE_SYSTEM.root_dir().ls();
-        for i in v{
-            println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
-        }
-        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield","getpid","wait","waitpid","getppid","brk"]{
+        //let v=FILE_SYSTEM.root_dir().ls();
+        //for i in v{
+        //    println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
+        //}
+
+
+        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield","getpid","wait","waitpid","getppid","brk","mount","umount","fork"]{
         //for i in ["waitpid"]{
             let mut data=[0u8;4096*20];
             FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
@@ -124,7 +128,7 @@ pub fn rust_main() -> ! {
                 }
                 let next_tid=next_tid.unwrap();
                 THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
-                //看看进程有没有退出
+                //退出的进程由父进程来彻底释放
                 if let Status::Killed(a)=THREAD_POOL.get_mut().get_status(next_tid){
                 }
                 else{
@@ -140,19 +144,6 @@ pub fn rust_main() -> ! {
         shutdown();
 
         /*
-        let thread2:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
-        let thread2_tid=thread2.tid;
-        GLOBAL_SCHEDULER.lock().push_thread(thread2);
-    
-        let thread3:Box<Thread>=Box::new(Thread::new_thread_same_pgtable());
-        GLOBAL_SCHEDULER.lock().push_thread(thread3);
-
-        for i in 0..5 {
-            println!("hi i'm scheduler(cpuid:{})",cpu_id());
-            let next_tid=GLOBAL_SCHEDULER.lock().pop().unwrap();
-            THREAD_POOL.get_mut().pool[idle_tid].lock().as_mut().unwrap().thread.kthread.switch_to(next_tid);
-            GLOBAL_SCHEDULER.lock().push_tid(next_tid);
-        }
 
         loop {
         

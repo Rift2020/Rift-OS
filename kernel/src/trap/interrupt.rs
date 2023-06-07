@@ -64,10 +64,10 @@ fn trap(tf: &mut TrapFrame) {
             panic!("trap handled!")
 
         },
-        Trap::Interrupt(Interrupt::UserTimer)=>{
+        Trap::Interrupt(Interrupt::UserTimer)=>{//实际上用户态定时器中断也是走向SupervisorTimer
             panic!("This is impossible");
         }
-        Trap::Interrupt(Interrupt::SupervisorTimer) => {
+        Trap::Interrupt(Interrupt::SupervisorTimer) => {//用户态下，触发定时器中断就进行yield，以时间片轮转
             set_next_time_interrupt();
             yield_();
         }

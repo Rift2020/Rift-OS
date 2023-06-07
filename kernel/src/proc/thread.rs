@@ -32,7 +32,7 @@ pub struct Thread{
     pub cwd:String,
     pub fd_table:Vec<Option<FileInner>>,
     pub kthread:Box<KThread>,
-    pub uthread:Box<UThread>,//这实际上只在初始化时有效，之后，真实的tf已经在内核栈上了
+    pub uthread:Box<UThread>,//这实际上只在初始化时有效，之后，真实的tf已经在内核栈上了，待改进
 }
 
 pub struct ThreadInfo{

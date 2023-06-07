@@ -95,10 +95,17 @@ pub fn syscall(syscall_id: usize, args: [usize; 6],tf:TrapFrame) -> isize{
                 None=>1,
                 Some(tid)=>tid,
             }) as isize
+        } 
+        SYS_MOUNT=>{
+            0
+        }
+        SYS_UMOUNT2=>{
+            0
         }
         _ => {
             panic!("unknown syscall id {}", syscall_id);
         },
+
     }
 }
 

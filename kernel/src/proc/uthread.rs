@@ -41,13 +41,14 @@ impl UThread {
         let mut uthread=UThread::empty();
         uthread.trapframe.x[4]=cpu_id();
         uthread.trapframe.x[2]=USER_STACK_TOP-16000;//暂时不清楚为什么需要减一点
-                                                 //似乎user sp既向上又向下移动
+                                                 //似乎user
+                                                 //sp既向上又向下移动，但是按道理不应该是这样
         uthread.trapframe.sepc=entry_addr;
 
-        uthread.trapframe.sstatus=0x8000_0002_0000_6000;//权宜之计
+        uthread.trapframe.sstatus=0x8000_0002_0000_6000;//权宜之计，本来应该是在这里读取sstatus，现在手动给他赋上去
         //uthread.trapframe.sstatus|=0x20;
         //uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FFFD;
-        uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FEFF;
+        uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FEFF;//使得sret会进入用户态
 
 
         unsafe{uthread.push_at_tf(kstack_top_addr);}

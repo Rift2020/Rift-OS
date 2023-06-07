@@ -16,10 +16,9 @@ use super::user_buf_to_vptr;
 
 pub fn sys_brk(_brk:usize)->isize{
     let mut lk=my_lock!();
-    let _brk=_brk>>7;
-    let brk_value=lk.as_ref().unwrap().thread.pgtable.get_brk()+VirtAddr::from(_brk);
+    let brk_value=VirtAddr::from(_brk);
     if _brk==0{
-        return brk_value.0 as isize;
+        return usize::from(lk.as_mut().unwrap().thread.pgtable.get_brk()) as isize;
     }
     lk.as_mut().unwrap().thread.pgtable.set_brk(brk_value);
     0

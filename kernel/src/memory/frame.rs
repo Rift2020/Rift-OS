@@ -17,7 +17,7 @@ bitflags! {
         const W = 1 << 2;//writable
         const X = 1 << 3;//executable
         const U = 1 << 4;//user
-        const N = 1 << 5;//do not dealloc ! 
+        const N = 1 << 5;//指示drop不要进行dealloc ! 
     }
 }
 
@@ -129,6 +129,7 @@ impl From<Flags> for FrameFlags {
     }
 }
 
+//申请一个新的页段，并且把数据复制过去
 impl Clone for FrameArea{
     fn clone(&self) -> Self {
         let new_fa=match Self::new_by_alloc_noclear(self.count,self.flags()){

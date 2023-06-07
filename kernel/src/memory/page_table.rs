@@ -154,7 +154,7 @@ impl PageTable {
         }
     }
 
-
+    //检查用户态是否确实拥有这段VA范围的PTE权限
     pub fn check_user_range(&mut self,vstart:VirtAddr,vend:VirtAddr,flags:PTEFlags)->bool{
         let vend=VirtAddr(vend.0-1);
         let frame_start:usize=vstart.floor_vpn().into();
@@ -175,6 +175,7 @@ impl PageTable {
         return true;
     }
     
+    //通过页表来将va转换成pa
     pub fn find_va_pa(&mut self,va:VirtAddr)->Option<PhysAddr>{
         let pte=self.find_pte(va.vpn(),false)?;
         let ppn=pte.get_ppn();
@@ -246,11 +247,12 @@ impl PageTable {
     }
 }
 
+//用于线程复制
 impl Clone for PageTable{
     fn clone(&self) -> Self {
         let mut new_pgtable=Self::new();
         new_pgtable.root_ppn.set_bytes_array(self.root_ppn.get_bytes_array().as_ptr());
-        //复制除了 (root_ppn,以及标记不用释放) 以外的页
+        //复制除了 (原root_ppn,以及标记不用释放) 以外的页
         for i in 1..self.frame_set.len(){
             if self.frame_set[i].has_flags(FrameFlags::N){
                 continue;

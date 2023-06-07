@@ -79,6 +79,7 @@ pub fn chdir_vec<'a>(cwd_v:&mut Vec<&'a str>,path_vec:Vec<&'a str>)->isize{
     ret
 }
 
+
 pub fn chdir(cwd:&mut String,path:&String)->isize{
     let mut cwd_vec:Vec<&str>=cwd.split('/').collect();
     let path_vec:Vec<&str>=path.split('/').collect();
