@@ -107,10 +107,10 @@ kernel/src
 
 ```shell
 rustup target add riscv64imac-unknown-none-elf
-rustup default nightly-2023-03-29 rustup component add llvm-tools-preview  rustup target add riscv64imac-unknown-none-elf cargo install cargo-binutils rustup target add riscv64imac-unknown-none-elf --toolchain nightly-2023-03-29 rustup component add llvm-tools-preview --toolchain nightly-2023-03-29
+rustup default nightly-2023-03-29; rustup component add llvm-tools-preview;  rustup target add riscv64imac-unknown-none-elf; cargo install cargo-binutils; rustup target add riscv64imac-unknown-none-elf --toolchain nightly-2023-03-29; rustup component add llvm-tools-preview --toolchain nightly-2023-03-29
 ```
 
-将比赛的sdcard.img置于项目目录下，运行比赛测例
+下载比赛的sdcard.img，并且设置Makefile中的`DRIVE_FILE`值为你下载的路径，运行比赛测例
 
 ```shell
 make qemu

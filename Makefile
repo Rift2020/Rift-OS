@@ -13,7 +13,8 @@ MEMORY_SIZE := 128M
 
 CPU_NUM := 2
 
-DRIVE_FILE := sdcard.img
+DRIVE_FILE := ~/Music/sdcard.img
+DRIVE_FILE_COPY := sdcard_.img
 
 clean:
 	cd kernel && cargo clean
@@ -33,7 +34,7 @@ release:
 	# rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
 
 qemu:release
-	@cp ~/Music/sdcard.img ./sdcard.img
+	@cp $(DRIVE_FILE) $(DRIVE_FILE_COPY)
 	@qemu-system-riscv64 \
 		-machine virt \
     	-nographic \
@@ -41,10 +42,10 @@ qemu:release
     	-bios $(BOOTLOADER) \
 		-m $(MEMORY_SIZE) \
 		-smp $(CPU_NUM)\
-    	-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
+    	-drive file=$(DRIVE_FILE_COPY),if=none,format=raw,id=x0\
 		-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 gdb:build
-	@cp ~/Music/sdcard.img ./sdcard.img
+	@cp $(DRIVE_FILE) $(DRIVE_FILE_COPY)
 	@tmux new-session -d \
 		"qemu-system-riscv64 \
 			-machine virt \
@@ -53,7 +54,7 @@ gdb:build
     		-bios $(BOOTLOADER) \
 			-m $(MEMORY_SIZE) \
 			-smp $(CPU_NUM) \
-			-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
+			-drive file=$(DRIVE_FILE_COPY),if=none,format=raw,id=x0\
 			-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0\
     		-s -S" && \
     tmux split-window -h \
@@ -64,6 +65,7 @@ gdb:build
 	tmux -2 attach-session -d
 
 gdb2:release
+	@cp $(DRIVE_FILE) $(DRIVE_FILE_COPY)
 	@tmux new-session -d \
 		"qemu-system-riscv64 \
 			-machine virt \
@@ -72,7 +74,7 @@ gdb2:release
     		-bios $(BOOTLOADER) \
 			-m $(MEMORY_SIZE) \
 			-smp $(CPU_NUM) \
-			-drive file=$(DRIVE_FILE),if=none,format=raw,id=x0\
+			-drive file=$(DRIVE_FILE_COPY),if=none,format=raw,id=x0\
 			-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0\
     		-s -S" && \
     tmux split-window -h \
