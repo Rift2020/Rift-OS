@@ -25,3 +25,5 @@ pub const USER_STACK_SIZE:usize=8*4096;
 pub const USER_STACK_TOP:usize=0x0000_0000_00ff_f000;
 
 pub const TIME_INTERRUPT_PER_SEC:usize=100;//开太大会炸
+                            
+pub const USER_STRING_MAX_LEN:usize=4096;

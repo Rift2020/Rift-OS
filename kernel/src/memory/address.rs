@@ -130,6 +130,13 @@ impl VirtPageNum {
         let vpn=self.0;
         [vpn&((1<<9)-1),(vpn>>9)&((1<<9)-1),(vpn>>18)&((1<<9)-1)]
     }
+
+}
+
+impl From<VirtPageNum> for VirtAddr{
+    fn from(value: VirtPageNum) -> Self {
+        VirtAddr(value.0<<PAGE_OFFSET_WIDTH)
+    }
 }
 
 impl From<VirtAddr> for VirtPageNum{

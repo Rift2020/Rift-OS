@@ -174,6 +174,8 @@ impl PageTable {
         }
         return true;
     }
+
+    
     
     //通过页表来将va转换成pa
     pub fn find_va_pa(&mut self,va:VirtAddr)->Option<PhysAddr>{

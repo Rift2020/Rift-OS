@@ -38,35 +38,21 @@ pub fn sys_getcwd(buf:*mut u8,size:usize)->isize{
     }
     buf as isize
 }
-pub fn sys_chdir(s:*const char)->isize{
-    let vstart=VirtAddr::from(s as usize);
-    //TODO：不完整的检查
-    let vend=VirtAddr::from(s as usize+size_of::<char>());
-    if my_thread!().pgtable.check_user_range(vstart, vend,PTEFlags::W)==false{
-        return -1;
-    }
-    let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *const u8;
-    let mut new_path=String::new();
-    unsafe{
-        for i in 0..4096{ 
-            if *vpt.add(i)==0{
-                break;
-            }
-            new_path.push(char::from_u32((*vpt.add(i)) as u32).unwrap());
-
-            if i==4096-1{
-                return -1;
-            }
+pub fn sys_chdir(s:*const u8)->isize{
+    let new_path=get_user_string(s);
+    match new_path {
+        Some(p)=>{
+            return chdir(&mut my_thread!().cwd,&p);
         }
-
+        None=>{
+            return -1;
+        }
     }
-    let ret=chdir(&mut my_thread!().cwd,&new_path);
-    ret
 }
 
 pub fn sys_mkdirat(dirfd:i32,path:*const u8,mode:usize)->isize{
 
-    //TODO:不完整的检查
+    /*TODO:不完整的检查
     let vpt=match user_buf_to_vptr(path as usize,size_of::<char>(),PTEFlags::R){
         None=>{
             return -1;
@@ -86,7 +72,16 @@ pub fn sys_mkdirat(dirfd:i32,path:*const u8,mode:usize)->isize{
             }
         }
 
-    } 
+    }
+    */
+    let mut _path=match get_user_string(path){
+        None=>{
+            return -1;
+        }
+        Some(s)=>{
+            s
+        }
+    };
     if (dirfd==-100){
         _path=String::from("/")+my_thread!().cwd.as_str()+_path.as_str();
     }

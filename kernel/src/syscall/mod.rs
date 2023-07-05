@@ -6,8 +6,10 @@ mod mm;
 mod proc;
 use core::mem::size_of;
 
+use crate::config::USER_STRING_MAX_LEN;
 use crate::fs::fs::fwrite;
 use crate::memory::address::VirtAddr;
+use crate::memory::address::VirtPageNum;
 use crate::memory::page_table::PTEFlags;
 use crate::my_thread;
 use crate::proc::kthread::yield_;
@@ -54,7 +56,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6],tf:TrapFrame) -> isize{
             sys_getcwd(args[0] as *mut u8,args[1])
         }
         SYS_CHDIR =>{
-            sys_chdir(args[0] as *const char)
+            sys_chdir(args[0] as *const u8)
         }
         SYS_MKDIRAT =>{
             sys_mkdirat(args[0] as i32,args[1] as *const u8,args[2])
@@ -121,25 +123,32 @@ pub fn user_buf_to_vptr(buf:usize,byte_len:usize,flag:PTEFlags)->Option<usize>{
 }
 
 pub fn get_user_string(s:*const u8)->Option<String>{
-    let vstart=VirtAddr::from(s as usize);
-    //TODO：不完整的检查
-    let vend=VirtAddr::from(s as usize+size_of::<char>());
-    if my_thread!().pgtable.check_user_range(vstart, vend,PTEFlags::W)==false{
-        return None;
-    }
-    let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *const u8;
     let mut new_path=String::new();
-    unsafe{
-        for i in 0..4096{ 
-            if *vpt.add(i)==0{
-                break;
+    let mut vstart=VirtAddr::from(s as usize);
+    let mut vpn=vstart.vpn();
+    let mut vend=VirtAddr::from(VirtPageNum(vpn.0+1));
+    loop  {
+        if my_thread!().pgtable.check_user_range(vstart, vend,PTEFlags::R)==false{
+            //println!("get_user_string: check_error");
+            return None;
+        }
+        let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *const u8;
+        let len=vend.0-vstart.0;
+        for i in 0..len{
+            unsafe{
+                if *vpt.add(i)==0{
+                    return Some(new_path);
+                }
+                new_path.push(char::from_u32((*vpt.add(i)) as u32).unwrap());
             }
-            new_path.push(char::from_u32((*vpt.add(i)) as u32).unwrap());
-
-            if i==4096-1{
+            if new_path.len()>USER_STRING_MAX_LEN{
+                //println!("get_user_string: user_string too long");
                 return None;
             }
         }
+        vpn.0+=1;
+        vstart=VirtAddr::from(vpn);
+        vend=VirtAddr::from(VirtPageNum(vpn.0+1));
     }
-    Some(new_path)
+    panic!("get_user_string:error");
 }
