@@ -71,7 +71,7 @@ pub fn init()->PageTable{
     println!("[Rift os] init_memory!");
     let frame_start=((ekernel as usize)-KERNEL_CODE_OFFSET+PHYS_VIRT_OFFSET+PAGE_SIZE-1)/PAGE_SIZE;
     let frame_end=(PHYS_MEM_END+PHYS_VIRT_OFFSET)/PAGE_SIZE;
-    println!("fs,fe {:#x} {:#x}",frame_start,frame_end);
+    //println!("fs,fe {:#x} {:#x}",frame_start,frame_end);
     unsafe{
         HEAP_ALLOCATOR
             .lock()

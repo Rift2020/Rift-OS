@@ -16,6 +16,10 @@ CPU_NUM := 2
 DRIVE_FILE := ~/Music/sdcard.img
 DRIVE_FILE_COPY := sdcard_.img
 
+TFTP_SHARE := /tftp_share
+
+VF_COM := /dev/ttyUSB0
+
 clean:
 	cd kernel && cargo clean
 
@@ -31,7 +35,7 @@ offline:copy_cargo
 
 release:
 	cd kernel && cargo build --release
-	# rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
+	rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
 
 qemu:release
 	@cp $(DRIVE_FILE) $(DRIVE_FILE_COPY)
@@ -88,5 +92,9 @@ all:offline
 	cp $(KERNEL_ELF) kernel-qemu
 	cp $(BOOTLOADER) sbi-qemu
 
+tftp:release
+	cp $(KERNEL_BIN) $(TFTP_SHARE)/os.bin
 
+vf2:tftp
+	sudo minicom -D $(VF_COM) -b 115200
 

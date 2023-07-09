@@ -123,6 +123,9 @@ impl PageTable {
         }
         let ppn=root_ppn;
         for i in 0..512{
+            //if i>=288 && i<288+16 &&depth == 0{
+            //    continue;
+            //}
             unsafe{
                 let pte=PageTableEntry::get_pte(ppn, i);
                 if pte.is_valid()==false{
@@ -130,7 +133,7 @@ impl PageTable {
                 }
                 for j in  0..depth{
                     print!("\t");
-                }
+                } 
                 println!("{:>3} {:?}",i,pte);
                 if pte.is_directory() {
                     Self::print_pgtable(pte.get_ppn(),depth+1);
@@ -217,7 +220,7 @@ impl PageTable {
             match pte {
                 Some(pte1)=>{
                     pte1.set_ppn(PhysPageNum::from(p));
-                    pte1.set_flags(PTEFlags::from(frame.flags()));
+                    pte1.set_flags(PTEFlags::from(frame.flags())|PTEFlags::A|PTEFlags::D);
                 }
                 None=>{
                     panic!("map fail!");
@@ -246,6 +249,7 @@ impl PageTable {
         let satp=self.root_ppn.satp();
         riscv::register::satp::write(satp); 
         unsafe {sfence_vma_all();}
+        
     }
 }
 

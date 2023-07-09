@@ -71,9 +71,9 @@ pub fn rust_main() -> ! {
         println!("hart {} starting",cpu_id());
         
         trap::interrupt::init_interrupt();
-        
         let pgtable=memory::init();
         pgtable.set_satp_to_root();
+        //println!("set ok");
         //println!("start other hart");
         //多核启动部分
         let mut kstack_vec:Vec<KStack>=Vec::new();
@@ -100,6 +100,9 @@ pub fn rust_main() -> ! {
             set_next_time_interrupt();
         }
         
+        loop {
+            
+        }
         //奇怪的read_block error仍然时隐时现，但是好像拖延一下时间再读写硬盘，会让发生的概率减少十倍，原因未知
         for i in 0..2000{
             println!("waiting");
