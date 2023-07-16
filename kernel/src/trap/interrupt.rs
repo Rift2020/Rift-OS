@@ -59,11 +59,6 @@ fn trap(tf: &mut TrapFrame) {
     let sscratch=sscratch::read();
     match cause {
         Trap::Exception(Exception::UserEnvCall) => call_syscall(tf),
-        Trap::Exception(Exception::StorePageFault)=>{
-            eprintln!("StorePageFault in :{:#x}",stval::read());
-            panic!("trap handled!")
-
-        },
         Trap::Interrupt(Interrupt::UserTimer)=>{//实际上用户态定时器中断也是走向SupervisorTimer
             panic!("This is impossible");
         }
@@ -73,6 +68,7 @@ fn trap(tf: &mut TrapFrame) {
         }
         _ => {
             eprintln!("kernel_trap[CPU{}]: cause: {:?}, epc: {:#x}",cpu_id(),cause , epc);
+            eprintln!("stval:{:#x}",stval::read());
             panic!("trap handled!");
         }
     }

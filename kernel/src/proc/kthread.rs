@@ -79,7 +79,7 @@ pub fn yield_(){
 #[no_mangle]
 #[repr(align(4))]
 pub fn forkret(){
-    //println!("hi! switch success! this is a new thread");
+    println!("hi! switch success! this is a new thread on cpu {}",cpu_id());
     //如果一个线程曾经切换出去过，那么再次回来后，他将会在switch_to最末尾隐式地释放掉自己进程和目标进程(一般为idle)的锁
     //但是新初始的进程不会这么做，所以我们必须显式地释放他们
     unsafe{

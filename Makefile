@@ -13,12 +13,15 @@ MEMORY_SIZE := 128M
 
 CPU_NUM := 2
 
-DRIVE_FILE := ~/Music/sdcard.img
+# DRIVE_FILE := ~/Music/sdcard.img
+DRIVE_FILE := sdcard-final_.img
 DRIVE_FILE_COPY := sdcard_.img
 
 TFTP_SHARE := /tftp_share
 
 VF_COM := /dev/ttyUSB0
+
+
 
 clean:
 	cd kernel && cargo clean

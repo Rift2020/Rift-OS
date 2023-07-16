@@ -100,29 +100,27 @@ pub fn rust_main() -> ! {
             set_next_time_interrupt();
         }
         
-        loop {
-            
-        }
         //奇怪的read_block error仍然时隐时现，但是好像拖延一下时间再读写硬盘，会让发生的概率减少十倍，原因未知
         for i in 0..2000{
             println!("waiting");
         }
         
         //driver::block_device::block_device_test();
-        //let v=FILE_SYSTEM.root_dir().ls();
-        //for i in v{
-        //    println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
-        //}
+        let v=FILE_SYSTEM.root_dir().ls();
+        for i in v{
+            println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
+        }
 
 
-        for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield","getpid","wait","waitpid","getppid","brk","mount","umount","fork"]{
-        //for i in ["waitpid"]{
-            let mut data=[0u8;4096*20];
-            FILE_SYSTEM.root_dir().open_file(i).unwrap().read(&mut data).ok().unwrap();
+        //for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield","getpid","wait","waitpid","getppid","brk","mount","umount","fork"]{
+        for i in ["busybox"]{
+            let mut data=Box::new([0u8;4096*512]);
+            FILE_SYSTEM.root_dir().open_file(i).unwrap().read(data.as_mut()).ok().unwrap();
             //println!("len:{}",len);
             ////println!("{:?}",data);
-
-            let thread=Box::new(Thread::new_thread_by_elf(&data));
+            println!("fs read ok");
+            let thread=Box::new(Thread::new_thread_by_elf(data.as_ref()));
+            println!("new thread ok");
             let thread_tid=GLOBAL_SCHEDULER.lock().push_thread(thread);
             loop {
                 let next_tid=GLOBAL_SCHEDULER.lock().pop();

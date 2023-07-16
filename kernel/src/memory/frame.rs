@@ -80,6 +80,7 @@ impl FrameArea {
         match p {
             Some(ppn)=>{
                 let v_p=pa_to_va_usize(PhysAddr::from(ppn)) as *mut u8;
+                //println!("ppn:{} 1:{} 2:{} 3{}",ppn.0,v_ptr as usize,v_p as usize,byte_len);
                 unsafe{
                     core::ptr::copy(v_ptr,v_p,byte_len);
                 }
@@ -88,6 +89,27 @@ impl FrameArea {
             None => None,
         }
         
+    }
+    pub fn new_by_elf_sec(data_ptr:*const u8,va:VirtAddr,load_size:usize,mem_size:usize,flags:FrameFlags)->Option<Self>{
+        assert!(mem_size>0);
+        let first_ppn=va.floor_vpn();
+        let last_ppn=VirtAddr(va.0+mem_size-1).floor_vpn();// [first_ppn,last_ppn]
+        let count=(last_ppn.0-first_ppn.0)+1;
+        let voffset=va.0-VirtAddr::from(first_ppn).0;
+        let p=FRAME_ALLOCATOR.lock().alloc(count);
+        //println!("dp{:#x},va{:#x},voff{:#x},load_size{:#x},mem_size{:#x},count{:#x}",data_ptr as usize,va.0,voffset,load_size,mem_size,count);
+        match p {
+            Some(ppn)=>{
+                let v_p=(pa_to_va_usize(PhysAddr::from(ppn))+voffset) as *mut u8; 
+                //println!("ppn:{} 1:{} 2:{} 3{}",ppn.0,data_ptr as usize,v_p as usize,load_size);
+                unsafe{
+                    core::ptr::copy(data_ptr,v_p,load_size);
+                    core::ptr::write_bytes(v_p.add(load_size),0,mem_size-load_size);
+                }
+                Some(FrameArea::new_without_clear(ppn,count,flags))
+            },
+            None=>None,
+        }
     }
     pub fn ppn(&self)->PhysPageNum{
         self.ppn

@@ -27,7 +27,10 @@ impl block_device::BlockDevice for BlockDeviceForFS  {
    fn read(&self, buf: &mut [u8], address: usize, number_of_blocks: usize) -> Result<(), Self::Error> {
        //由于fat32可能会给非512整数倍的数值，所以先用vec读再转过去
        //有待改进
-       assert!(buf.len()>=512);
+//       assert!(buf.len()>=512);
+        if buf.len()<512{
+            println!("read {} {}",buf.len(),number_of_blocks);
+        }
        let mut buffer:Vec<u8>=Vec::new();
        buffer.resize(512*number_of_blocks,0);
         let mut ind=0;
