@@ -111,6 +111,7 @@ _to_kernel:
 __alltraps:
 	SAVE_ALL
 	mv a0, sp # a0=sp 
+	LOAD x4, 34 # x4 is tp register
 	jal trap
 
 	.globl __trapret
