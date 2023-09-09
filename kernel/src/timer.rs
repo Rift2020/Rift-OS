@@ -84,3 +84,10 @@ pub fn get_time()->usize{
 pub fn set_next_time_interrupt(){
     set_timer(time::read()+TIME_INTERRUPT_CYCLES);
 }
+
+pub fn ksleep(s:usize,ns:usize){
+    let expect_cycle=get_cycle()+CPU_FREQ*s+CPU_FREQ*ns/1000_000_000;
+    while get_cycle()<expect_cycle {
+        //waiting
+    }
+}

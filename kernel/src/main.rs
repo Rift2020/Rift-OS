@@ -55,6 +55,7 @@ use crate::proc::scheduler::*;
 use crate::sbi::shutdown;
 use crate::timer::get_cycle;
 use crate::timer::set_next_time_interrupt;
+use crate::timer::ksleep;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 
@@ -99,11 +100,10 @@ pub fn rust_main() -> ! {
             //sstatus::set_sie();
             set_next_time_interrupt();
         }
-        
         //奇怪的read_block error仍然时隐时现，但是好像拖延一下时间再读写硬盘，会让发生的概率减少十倍，原因未知
-        for i in 0..2000{
-            println!("waiting");
-        }
+        //这是一个大约在2023.06时的bug，我在最近的上百次测试都不再出现该virtio init bug
+        ksleep(5,0);
+
         
         //driver::block_device::block_device_test();
         let v=FILE_SYSTEM.root_dir().ls();
