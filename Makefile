@@ -13,16 +13,19 @@ MEMORY_SIZE := 128M
 
 CPU_NUM := 2
 
-# DRIVE_FILE := ~/Music/sdcard.img
-DRIVE_FILE := sdcard-final_.img
-DRIVE_FILE_COPY := sdcard_.img
+OSCOMP2023_PRE_DRIVE:= sdcard-pre.img
+OSCOMP2023_FINAL_DRIVE := sdcard-final.img
+DRIVE_FILE := $(OSCOMP2023_PRE_DRIVE)
+DRIVE_FILE_COPY := sdcard_copy.img
 
 TFTP_SHARE := /tftp_share
 
 VF_COM := /dev/ttyUSB0
 
-
-
+dl_img:
+	wget -qO-  https://github.com/oscomp/testsuits-for-oskernel/raw/6efdff31d9eb882ff73352e7010019fc56ead4de/sdcard.img.gz | gunzip - > $(OSCOMP2023_PRE_DRIVE)
+	wget -qO-  https://github.com/oscomp/testsuits-for-oskernel/releases/download/2023-final/sdcard.img.gz | gunzip - > $(OSCOMP2023_FINAL_DRIVE)
+	
 clean:
 	cd kernel && cargo clean
 
@@ -38,7 +41,7 @@ offline:copy_cargo
 
 release:
 	cd kernel && cargo build --release
-	rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
+	# rust-objcopy --strip-all $(KERNEL_ELF) -O binary $(KERNEL_BIN)
 
 qemu:release
 	@cp $(DRIVE_FILE) $(DRIVE_FILE_COPY)
@@ -58,26 +61,6 @@ gdb:build
 			-machine virt \
     		-nographic \
 			-kernel $(KERNEL_DEBUG_ELF)\
-    		-bios $(BOOTLOADER) \
-			-m $(MEMORY_SIZE) \
-			-smp $(CPU_NUM) \
-			-drive file=$(DRIVE_FILE_COPY),if=none,format=raw,id=x0\
-			-device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0\
-    		-s -S" && \
-    tmux split-window -h \
-		"riscv64-unknown-elf-gdb \
-			-ex 'file $(KERNEL_DEBUG_ELF)' \
-    		-ex 'set arch riscv:rv64' \
-    		-ex 'target remote localhost:1234'" &&\
-	tmux -2 attach-session -d
-
-gdb2:release
-	@cp $(DRIVE_FILE) $(DRIVE_FILE_COPY)
-	@tmux new-session -d \
-		"qemu-system-riscv64 \
-			-machine virt \
-    		-nographic \
-			-kernel $(KERNEL_ELF)\
     		-bios $(BOOTLOADER) \
 			-m $(MEMORY_SIZE) \
 			-smp $(CPU_NUM) \
