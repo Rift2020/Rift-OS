@@ -1,2 +1,3 @@
 *.img
+!sdcard-example.img
 .gdb_history
