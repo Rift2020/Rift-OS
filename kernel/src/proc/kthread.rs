@@ -141,4 +141,10 @@ impl KThread {
         };
         Box::new(KThread {context_addr,kstack})
     }
+    pub fn change_root_ppn(&mut self,root_ppn:PhysPageNum){
+        let context_ptr:*mut Context=self.context_addr as *mut Context;
+        unsafe{
+            (*context_ptr).root_ppn=root_ppn.satp();
+        }
+    }
 }

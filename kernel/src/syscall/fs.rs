@@ -3,6 +3,7 @@ use alloc::string::ToString;
 
 use crate::fs::fs::*;
 use crate::fs::FILE_SYSTEM;
+use crate::stdio::getline;
 use core::clone;
 use core::mem::size_of;
 use core::ptr::slice_from_raw_parts;
@@ -82,6 +83,7 @@ pub fn sys_mkdirat(dirfd:i32,path:*const u8,mode:usize)->isize{
             s
         }
     };
+    //println!("mkdirat:{}",_path);
     if (dirfd==-100){
         _path=String::from("/")+my_thread!().cwd.as_str()+_path.as_str();
     }
@@ -124,6 +126,7 @@ pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
         None=>return -1,
         Some(s)=>s,
     };
+
     if (dirfd==-100){
         _path=String::from("/")+my_thread!().cwd.as_str()+_path.as_str();
         match  open(FileInner::empty(),&_path,OFlags::from_bits_truncate(mode as u32)){
@@ -142,7 +145,6 @@ pub fn sys_openat(dirfd:isize,filename:*const u8,flag:isize,mode:usize)->isize{
         None=>return -1,
         Some(inn)=>inn.clone(),
     };
-
     match open(inner, &_path,OFlags::from_bits_truncate(mode as u32)){
         Some(inn)=>{
             return push_inner(inn) as isize;
@@ -237,4 +239,33 @@ pub fn sys_dup3(fd:isize,new_fd:isize,f:usize)->isize{
     }
     lk.as_mut().unwrap().thread.fd_table[new_fd]=Some(inn);
     new_fd as isize
+}
+
+pub fn sys_getline(buf:*mut u8,size:usize)->isize{
+    if buf as usize ==0 {
+        return 0;
+    }
+    let vstart=VirtAddr::from(buf as usize);
+    let vend=VirtAddr::from(buf as usize+size_of::<u8>()*size);
+    if my_thread!().pgtable.check_user_range(vstart,vend,PTEFlags::W)==false{
+        return 0;
+    }
+    let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *mut u8;
+    let input=getline();
+    if input.len()>size{
+        return 0;
+    }
+    unsafe{
+        let mut vslice=core::slice::from_raw_parts_mut(vpt,size);
+        vslice[..input.len()].copy_from_slice(input.as_bytes());
+    }
+    buf as isize
+}
+
+pub fn sys_lsroot()->isize{
+        let v=FILE_SYSTEM.root_dir().ls();
+        for i in v{
+            println!("{}",i.get_name().unwrap());
+        }
+        0
 }

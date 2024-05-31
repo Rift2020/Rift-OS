@@ -21,10 +21,13 @@ use crate::timer::*;
 use alloc::string::String;
 use syscall_num::*;
 
+use self::fs::sys_getline;
+use self::fs::sys_lsroot;
 use self::fs::{sys_getcwd, sys_chdir, sys_mkdirat, sys_openat, sys_close, sys_read, sys_write, sys_dup, sys_dup3};
 use self::mm::sys_brk;
 use self::other::*;
 use self::other::time::*;
+use self::proc::sys_execve;
 use self::proc::{sys_clone, sys_wait};
 use thread::*;
 
@@ -104,9 +107,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6],tf:TrapFrame) -> isize{
         SYS_UMOUNT2=>{
             0
         }
-        SYS_FADVISE64=>{
-            0
+        SYS_EXECVE=>{
+            sys_execve(args[0] as *const u8,args[1] as *const usize,args[2] as *const usize)
         }
+        SYS_GETLINE=>{
+            sys_getline(args[0] as *mut u8,args[1] as usize)
+        },
+        SYS_LSROOT=>{
+            sys_lsroot()
+        },
         _ => {
             panic!("unknown syscall id {}", syscall_id);
         },
@@ -132,7 +141,7 @@ pub fn get_user_string(s:*const u8)->Option<String>{
     let mut vend=VirtAddr::from(VirtPageNum(vpn.0+1));
     loop  {
         if my_thread!().pgtable.check_user_range(vstart, vend,PTEFlags::R)==false{
-            //println!("get_user_string: check_error");
+            println!("get_user_string: check_error {:#x}",s as usize);
             return None;
         }
         let vpt=my_thread!().pgtable.uva_to_kusize(vstart) as *const u8;
@@ -145,7 +154,7 @@ pub fn get_user_string(s:*const u8)->Option<String>{
                 new_path.push(char::from_u32((*vpt.add(i)) as u32).unwrap());
             }
             if new_path.len()>USER_STRING_MAX_LEN{
-                //println!("get_user_string: user_string too long");
+                println!("get_user_string: user_string too long");
                 return None;
             }
         }

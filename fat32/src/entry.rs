@@ -432,8 +432,8 @@ impl Entry {
         }
     }
     
-    pub(crate) fn valid_lfn(&self)->bool{
-        if self.is_deleted()==false && self.get_lfn().is_some(){
+    pub(crate) fn valid_sfn(&self)->bool{
+        if self.is_deleted()==false && (self.get_sfn().is_some()){
             return true;
         }
         return false

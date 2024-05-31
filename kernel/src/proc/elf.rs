@@ -24,7 +24,7 @@ impl ElfExt for ElfFile<'_> {
            let va=VirtAddr::from(ph.virtual_addr() as usize);
            let mem_size =ph.mem_size() as usize;
            let load_size=ph.file_size() as usize;
-           println!("va {:#x} , mem_size {:#x}",ph.virtual_addr() as usize,mem_size);
+//           println!("va {:#x} , mem_size {:#x}",ph.virtual_addr() as usize,mem_size);
            pgtable.set_brk(VirtAddr(va.0+mem_size));
             let data = match ph.get_data(self).unwrap() {
                 SegmentData::Undefined(data) => data,

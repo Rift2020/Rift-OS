@@ -99,6 +99,24 @@ impl Thread {
         thread.uthread=Box::new(UThread::new(entry_addr,thread.kthread.kstack.top_addr(),&mut thread.pgtable));
         thread
     }
+    pub fn exec_by_elf(& mut self,data:&[u8],args:Vec<String>){
+        //self.pgtable.remove_user_page();
+        self.pgtable=map_kernel();//直接更换新页表
+        self.pgtable.set_satp_to_root();
+        self.fd_table={
+            let mut v=Vec::new();
+            v.push(Some(FileInner { dir: None, file: None,std:1 ,o_flag:OFlags::O_RDONLY, path: String::new(), flag: 0 }));
+            v.push(Some(FileInner { dir: None, file: None,std:2 ,o_flag:OFlags::O_WRONLY,path: String::new(), flag: 0 }));
+            v.push(Some(FileInner { dir: None, file: None,std:3 ,o_flag:OFlags::O_WRONLY,path: String::new(), flag: 0 }));
+            v
+        };
+        let elf=ElfFile::new(data).expect("illegal elf");
+        assert!(elf.header.pt2.type_().as_type()==header::Type::Executable);
+        let entry_addr=elf.header.pt2.entry_point() as usize;
+        elf.add_memory_area(&mut self.pgtable);
+        self.uthread=Box::new(UThread::new_with_args(entry_addr,self.kthread.kstack.top_addr(),&mut self.pgtable,args));
+        //_
+    }
 
 
 }

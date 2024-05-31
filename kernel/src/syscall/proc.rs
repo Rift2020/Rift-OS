@@ -1,7 +1,10 @@
 use core::mem::size_of;
 
 use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
 
+use crate::fs::FILE_SYSTEM;
 use crate::memory::address::*;
 
 use crate::arch::cpu_id;
@@ -34,6 +37,50 @@ pub fn sys_clone(flags:usize,child_stack:usize,ptid:usize,tls:usize,ctid:usize,t
     //println!("ret:{}",ret);
     //println!("len:{}",my_thread!().child_tid.len());
     ret
+}
+
+pub fn sys_execve(path:*const u8,argv:*const usize,envp:*const usize)->isize{
+    //envp 未实现
+    let mut _path=match get_user_string(path) {
+        None=>{
+           println!("path string error");
+            return -1;
+        }
+        Some(s)=>s,
+    };
+    let mut data=Box::new([0u8;4096*512]);
+    match FILE_SYSTEM.root_dir().open_file(&_path) {
+        Ok(file)=>{
+            file.read(data.as_mut()).ok().unwrap();
+        }
+        Err(e)=>{
+            println!("wrong path {}",_path);
+            return -1;
+        }
+    }
+    FILE_SYSTEM.root_dir().open_file(&_path).unwrap().read(data.as_mut()).ok().unwrap();
+    let mut args:Vec<String>=Vec::new();
+    //缺失安全检查
+    let mut argv=argv;
+    if !argv.is_null(){
+        loop {
+            let str_uptr_ptr=my_thread!().pgtable.uva_to_kusize(VirtAddr::from(argv as usize)) as *const usize;
+            let str_uptr=unsafe {*str_uptr_ptr} as *const u8;
+            if str_uptr.is_null(){
+                break;
+            }
+            let str1=get_user_string(str_uptr).unwrap();
+            //println!("argv {},sup {},su {} str1 {}",argv as usize,str_uptr_ptr as usize,str_uptr as usize,str1);
+            args.push(get_user_string(str_uptr).unwrap());
+            unsafe {argv=argv.add(1);}
+        }
+    }
+    //println!("Vec len: {}",args.len());
+    //for i in &args{
+    //    println!("vec: {}",i);
+    //}
+    my_thread!().exec_by_elf(data.as_ref(),args);
+    0
 }
 
 pub fn sys_wait(pid:isize,status:usize,opt:usize)->isize{

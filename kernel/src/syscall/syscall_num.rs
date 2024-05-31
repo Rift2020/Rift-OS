@@ -28,4 +28,7 @@ pub const SYS_UNAME: usize = 160;
 pub const SYS_SCHED_YIELD: usize = 124;
 pub const SYS_GETTIMEOFDAY: usize = 169;
 pub const SYS_NANOSLEEP: usize = 101;
-pub const SYS_FADVISE64:usize = 96;
+pub const SYS_SET_TID_ADDRESS:usize = 96;
+
+pub const SYS_GETLINE:usize = 10001;
+pub const SYS_LSROOT:usize = 10002;

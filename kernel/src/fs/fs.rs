@@ -159,6 +159,7 @@ pub fn open(dir:FileInner,path:&String,flag:OFlags)->Option<FileInner>{
                             return Some(FileInner { dir: Some(dir), file: None,std:0, o_flag:flag,path: path.clone(), flag: 0 });
                         },
                         Err(e)=>{
+                            //println!("{}",path_vec[path_vec.len()-1]);
                             mdir.create_file(path_vec[path_vec.len()-1]).unwrap();
                             let f=mdir.open_file(path_vec[path_vec.len()-1]).unwrap();
                             return Some(FileInner { dir: None, file: Some(f),std:0, o_flag:flag,path: path.clone(), flag: 0 });

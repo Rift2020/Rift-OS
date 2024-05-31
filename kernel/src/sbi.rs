@@ -42,6 +42,14 @@ fn sbi_call(extension_id: isize ,function_id: isize, arg0: usize, arg1: usize, a
 pub fn putchar(c:usize){
     sbi_call(EID_CONSOLE_PUTCHAR,0,c,0,0);
 }
+pub fn getchar()->Option<char>{
+    let c:isize=sbi_call(EID_CONSOLE_GETCHAR,0,0,0,0).0;
+    if let -1=c{
+        return None;
+    } else{
+        return char::from_u32(c as u32);
+    }
+}
 pub fn shutdown()->!{
     sbi_call(EID_SHUTDOWN,0,0,0,0);
     panic!("shutdown fail!");

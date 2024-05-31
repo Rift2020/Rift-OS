@@ -52,7 +52,9 @@ use crate::proc::kthread::*;
 use crate::proc::thread;
 use crate::proc::thread::*;
 use crate::proc::scheduler::*;
+use crate::sbi::getchar;
 use crate::sbi::shutdown;
+use crate::stdio::getline;
 use crate::timer::get_cycle;
 use crate::timer::set_next_time_interrupt;
 use crate::timer::ksleep;
@@ -97,30 +99,34 @@ pub fn rust_main() -> ! {
         //准备定时器
         unsafe{
             sie::set_stimer();
+            //sie::set_sext();
             //sstatus::set_sie();
             set_next_time_interrupt();
         }
         //奇怪的read_block error仍然时隐时现，但是好像拖延一下时间再读写硬盘，会让发生的概率减少十倍，原因未知
         //这是一个大约在2023.06时的bug，我在最近的上百次测试都不再出现该virtio init bug
-        ksleep(5,0);
+        //2024.03，它又回来啦
+        ksleep(3,0);
 
         
         //driver::block_device::block_device_test();
-        let v=FILE_SYSTEM.root_dir().ls();
-        for i in v{
-            println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
-        }
+        //let v=FILE_SYSTEM.root_dir().ls();
+        //for i in v{
+        //    println!("\t{} {}",i.get_name().unwrap(),i.get_name().unwrap().len());
+        //}
 
 
         //for i in ["write","uname","times","gettimeofday","sleep","getcwd","chdir","mkdir_","read","close","openat","open","dup","dup2","clone","exit","yield","getpid","wait","waitpid","getppid","brk","mount","umount","fork"]{
-        for i in ["busybox"]{
+        //for i in ["busybox"]{
+        for i in ["sh"]{
+        //for i in ["execve"]{
             let mut data=Box::new([0u8;4096*512]);
             FILE_SYSTEM.root_dir().open_file(i).unwrap().read(data.as_mut()).ok().unwrap();
             //println!("len:{}",len);
             ////println!("{:?}",data);
-            println!("fs read ok");
+            //println!("fs read ok");
             let thread=Box::new(Thread::new_thread_by_elf(data.as_ref()));
-            println!("new thread ok");
+            //println!("new thread ok");
             let thread_tid=GLOBAL_SCHEDULER.lock().push_thread(thread);
             loop {
                 let next_tid=GLOBAL_SCHEDULER.lock().pop();
@@ -137,11 +143,9 @@ pub fn rust_main() -> ! {
                 }
             }
     
-            println!("**********{} test over**********",i);
+//            println!("**********{} test over**********",i);
         }
-                
         println!("user test over! now shutdown");
-
         shutdown();
 
         /*

@@ -52,7 +52,9 @@ fn add_stime(){
 #[no_mangle]
 fn trap(tf: &mut TrapFrame) {
     //println!("tf:{:?}",tf);
+    //println!("trap tp:{}",tf.tp);
     unsafe{sstatus::clear_sie();}//进内核态关中断，出内核态开中断(不是严格的边界)，但理论上只要开中断的时候不持有锁就可以，TODO:把锁换成自动开关中断的
+    
     add_utime();
     let cause = scause::read().cause();
     let epc = sepc::read();
@@ -61,6 +63,9 @@ fn trap(tf: &mut TrapFrame) {
         Trap::Exception(Exception::UserEnvCall) => call_syscall(tf),
         Trap::Interrupt(Interrupt::UserTimer)=>{//实际上用户态定时器中断也是走向SupervisorTimer
             panic!("This is impossible");
+        }
+        Trap::Interrupt(Interrupt::SupervisorExternal)=>{
+            println!("external");
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {//用户态下，触发定时器中断就进行yield，以时间片轮转
             set_next_time_interrupt();

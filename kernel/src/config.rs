@@ -1,5 +1,10 @@
 #![allow(unused)]
 
+//UART
+//based on qemu's hw/riscv/virt.c
+pub const UART0:usize = 0x10000000;
+pub const UART0_IRQ:usize = 10;
+
 pub const PAGE_SIZE:usize = 4096;
 pub const INIT_KERNEL_HEAP_SIZE:usize = 128*1024;
 //pub const PHYS_MEM_END:usize = 0xFDA4F580;//

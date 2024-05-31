@@ -1,11 +1,12 @@
-use crate::sbi::putchar;
+use alloc::string::String;
+
+use crate::sbi::{getchar, putchar};
 use core::fmt::{self, Write};
 pub struct Stdout;
 
 
 
 pub static STDOUT_MUTEX:spin::Mutex<Stdout>=spin::Mutex::new(Stdout);
-
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -15,6 +16,7 @@ impl Write for Stdout {
         Ok(())
     }
 }
+
 
 pub fn print(args: fmt::Arguments) {
     STDOUT_MUTEX.lock().write_fmt(args).unwrap();
@@ -60,3 +62,15 @@ macro_rules! eprintln {
 }
 
 
+pub fn getline()->String{
+    let mut str1=String::new();
+    loop {
+        if let Some(ch)=getchar(){
+            if ch as u8 == 13 {
+               str1.push('\n');
+               return str1;
+            }
+            str1.push(ch);
+        }
+    }
+}

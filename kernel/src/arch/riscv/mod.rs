@@ -22,5 +22,6 @@ pub fn r_tp() -> usize {
 
 #[inline]
 pub fn cpu_id()->usize{
-    r_tp()
+    //r_tp()
+    0
 }

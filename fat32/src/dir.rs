@@ -127,7 +127,8 @@ impl<'a, T> Dir<'a, T>
     }
     pub fn ls(&self)->Vec<Entry>{
         let iter = DirIter::new(self.device, self.fat, self.bpb);
-        iter.filter(|x|x.valid_lfn()).collect()
+        iter.filter(|x|x.valid_sfn()).collect()
+        //iter.collect()
     }
     pub fn get_name(&self)->String{
         self.detail.get_name().unwrap()

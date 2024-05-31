@@ -15,7 +15,8 @@ CPU_NUM := 2
 
 OSCOMP2023_PRE_DRIVE:= sdcard-pre.img
 OSCOMP2023_FINAL_DRIVE := sdcard-final.img
-DRIVE_FILE := $(OSCOMP2023_PRE_DRIVE)
+EXAMPLE_DRIVE := sdcard-example.img
+DRIVE_FILE := $(EXAMPLE_DRIVE)
 DRIVE_FILE_COPY := sdcard_copy.img
 
 TFTP_SHARE := /tftp_share

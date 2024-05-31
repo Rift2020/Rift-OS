@@ -1,5 +1,7 @@
 use core::mem::zeroed;
 
+use alloc::string::String;
+use alloc::vec::Vec;
 use riscv::register::{
     sstatus,
     sstatus::*,
@@ -7,6 +9,8 @@ use riscv::register::{
 };
 use crate::arch::cpu_id;
 use crate::memory::address::VirtAddr;
+use crate::memory::page_table::PTEFlags;
+use crate::my_thread;
 use crate::proc::kthread::Context;
 
 use crate::{memory::{page_table::{PageTable, self}, frame::{FrameArea, FrameFlags}, address::VirtPageNum}, config::{USER_STACK_SIZE, PAGE_SIZE, USER_STACK_TOP}};
@@ -40,6 +44,7 @@ impl UThread {
         pgtable.map(VirtPageNum::from(VirtAddr::from(USER_STACK_TOP-USER_STACK_SIZE)),ustack);
 
         let mut uthread=UThread::empty();
+        //println!("cpu id {}",cpu_id());
         uthread.trapframe.x[4]=cpu_id();
         uthread.trapframe.x[2]=USER_STACK_TOP-16000;//暂时不清楚为什么需要减一点
                                                  //似乎user
@@ -51,10 +56,47 @@ impl UThread {
         //uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FFFD;
         uthread.trapframe.sstatus&=0xFFFF_FFFF_FFFF_FEFF;//使得sret会进入用户态
         uthread.trapframe.tp=cpu_id();
-
+        
         unsafe{uthread.push_at_tf(kstack_top_addr);}
         uthread
     } 
+    pub fn new_with_args(entry_addr:usize,kstack_top_addr:usize,pgtable:&mut PageTable,args:Vec<String>)->UThread{
+        //println!("new_with_args start");
+        let mut uthread=Self::new(entry_addr,kstack_top_addr,pgtable);
+
+        //不同于常规的处理方式，传给用户argc,argv用的是a2,a3寄存器而非a1,a2
+        uthread.trapframe.x[11]=args.len();
+        uthread.trapframe.x[12]=uthread.trapframe.x[2];
+        unsafe{uthread.push_at_tf(kstack_top_addr);}
+        //_
+        assert!(pgtable.check_user_range(VirtAddr::from(uthread.trapframe.x[12]),VirtAddr::from(uthread.trapframe.x[12]+10000),PTEFlags::U )==true);
+        let mut argv=pgtable.uva_to_kusize(VirtAddr::from(uthread.trapframe.x[12])) as *mut usize;
+        let mut str_uptr=(USER_STACK_TOP-8000) as *const u8;
+        let mut str_ptr=pgtable.uva_to_kusize(VirtAddr::from(USER_STACK_TOP-8000)) as *mut u8; 
+        for i in args{
+            //println!("argv {:#x},uprt {:#x}, str {:#x}",argv as usize,str_uptr as usize,str_ptr as usize);
+            //println!("string:{}",i);
+            unsafe{
+                *argv=str_uptr as usize;
+//                assert!(pgtable.check_user_range(VirtAddr::from(argv),VirtAddr::from(uthread.trapframe.x[12]+10000),PTEFlags::U )==true);
+                for c in i.as_bytes(){
+                    *str_ptr=*c;
+                    str_uptr=str_uptr.add(1);
+                    str_ptr=str_ptr.add(1);
+                }
+                *str_ptr=0;
+                str_uptr=str_uptr.add(1);
+                str_ptr=str_ptr.add(1);
+                argv=argv.add(1);
+            }
+        }
+        unsafe{*argv=0};
+        //println!("argv {},uprt {}, str {}",argv as usize,str_uptr as usize,str_ptr as usize);
+        
+        //_
+        //println!("tp:{}",uthread.trapframe.tp);
+        uthread
+    }
     unsafe fn push_at_tf(&self,stack_top_addr:usize)->usize{
         let ptr=(stack_top_addr as *mut TrapFrame).sub(1);
         *ptr=self.trapframe;

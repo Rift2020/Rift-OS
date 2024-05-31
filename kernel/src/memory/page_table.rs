@@ -251,6 +251,11 @@ impl PageTable {
         unsafe {sfence_vma_all();}
         
     }
+
+    //pub fn remove_user_page(&mut self){
+        //self.frame_set.retain(|x| x.has_flags(FrameFlags::N));
+        //缺失移除pagetable相应项
+    //}
 }
 
 //用于线程复制
@@ -258,7 +263,7 @@ impl Clone for PageTable{
     fn clone(&self) -> Self {
         let mut new_pgtable=Self::new();
         new_pgtable.root_ppn.set_bytes_array(self.root_ppn.get_bytes_array().as_ptr());
-        //复制除了 (原root_ppn,以及标记不用释放) 以外的页
+        //复制除了 (原root_ppn,以及被标记为不用释放) 以外的页
         for i in 1..self.frame_set.len(){
             if self.frame_set[i].has_flags(FrameFlags::N){
                 continue;
